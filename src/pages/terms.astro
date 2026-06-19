@@ -1,0 +1,152 @@
+---
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Términos de Servicio | VapeZone</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <Navbar solid={true} />
+
+        <main class="legal-page">
+            <div class="legal-container reveal-item is-visible">
+                <h1 class="legal-title">Términos de Servicio</h1>
+                
+                <div class="legal-content">
+                    <p class="last-updated">Última actualización: 19 de junio de 2026</p>
+                    <p>Bienvenido a Vapezone (vapezone.com.mx). Al acceder, navegar o utilizar nuestro sitio web, así como al realizar una compra, aceptas estar sujeto a los siguientes Términos y Condiciones. Te rogamos leerlos cuidadosamente.</p>
+
+                    <h3>1. Restricción de Edad Estricta</h3>
+                    <p>La venta de todos los productos de este catálogo está estrictamente prohibida a menores de 18 años. Al ingresar a este sitio web y/o confirmar una orden, el usuario declara bajo protesta de decir verdad que es mayor de edad legal en los Estados Unidos Mexicanos. Vapezone se reserva el derecho de solicitar una identificación oficial para verificar la edad antes de concretar cualquier envío.</p>
+                    
+                    <h3>2. Políticas de Compra y Pedido Mínimo</h3>
+                    <p>Para garantizar la viabilidad logística de nuestros envíos, nuestra plataforma requiere un mínimo de compra de $1,000.00 MXN (Mil pesos mexicanos 00/100 M.N.) en productos. Los pedidos que no alcancen este monto no podrán ser procesados por el sistema. Los precios mostrados en el catálogo están en moneda nacional (MXN).</p>
+
+                    <h3>3. Proceso de Pago y Verificación (Vía Discord)</h3>
+                    <p>Debido a las regulaciones vigentes, nuestra tienda no procesa pagos automatizados con tarjetas bancarias. El proceso de pago se rige por las siguientes normativas:</p>
+                    <ul>
+                        <li>Al finalizar el pedido, el sistema generará un número de orden único y proporcionará los datos para realizar el pago mediante transferencia bancaria o depósito en efectivo (Oxxo, farmacias, etc.).</li>
+                        <li>El cliente dispone de un plazo máximo de 48 horas para realizar el pago y enviar el comprobante fotográfico a nuestro canal oficial de Discord, citando su número de orden.</li>
+                        <li>Si el pago no es reportado y validado en este lapso, el sistema cancelará la orden automáticamente y los productos regresarán a nuestro inventario público.</li>
+                    </ul>
+
+                    <h3>4. Políticas de Envío</h3>
+                    <p>Realizamos envíos a toda la República Mexicana bajo un estándar de seguridad y discreción.</p>
+                    <ul>
+                        <li><strong>Costo de Envío:</strong> Se aplica una tarifa fija de $400.00 MXN a todas las órdenes.</li>
+                        <li><strong>Cobertura y Logística:</strong> Trabajamos con paqueterías de primer nivel (DHL, Estafeta, UPS y FedEx). El costo de envío cubre paquetes de hasta 10 kilogramos de peso, sin exceso de dimensiones.</li>
+                        <li><strong>Garantía de Tránsito:</strong> Nuestros envíos están gestionados bajo protocolos que aseguran el traslado sin riesgo de decomiso hasta el domicilio proporcionado por el cliente.</li>
+                    </ul>
+
+                    <h3>5. Disponibilidad de Inventario</h3>
+                    <p>Nuestro inventario se actualiza en tiempo real. Sin embargo, en el caso extraordinario de que un producto pagado se marque como agotado debido a un error de sincronización, el equipo de Vapezone se comunicará con el cliente a través de Discord para ofrecerle un cambio por un producto de igual o mayor valor, o el reembolso correspondiente a esa pieza.</p>
+
+                    <h3>6. Cero Devoluciones</h3>
+                    <p>Por tratarse de artículos de uso personal y consumibles, <strong>no tenemos devoluciones bajo ningún aspecto</strong>. No se aceptan cambios ni cancelaciones una vez procesado el envío, sin excepciones, por rigurosos motivos de higiene y salud pública.</p>
+
+                    <h3>7. Modificaciones a los Términos</h3>
+                    <p>Vapezone se reserva el derecho de modificar estos Términos y Condiciones en cualquier momento, adaptándonos a nuevas regulaciones comerciales o leyes aplicables en México. Los cambios entrarán en vigor en el momento de su publicación en este sitio web.</p>
+
+                    <h3>Contacto</h3>
+                    <p>Para cualquier duda legal o aclaración sobre estos términos, por favor contáctanos a través de nuestro canal de soporte en Discord.</p>
+                </div>
+            </div>
+        </main>
+
+        <Footer />
+    </body>
+</html>
+
+<style is:global>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    body {
+        background-color: #000;
+        color: #fff;
+        font-family: "Inter", sans-serif;
+    }
+</style>
+
+<style>
+    .legal-page {
+        padding-top: 4rem;
+        min-height: 100vh;
+        padding-bottom: 5rem;
+    }
+
+    .legal-container {
+        max-width: 800px;
+        margin: 4rem auto;
+        padding: 0 5%;
+    }
+
+    .legal-title {
+        font-family: "Oswald", sans-serif;
+        font-size: 3rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 3rem;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 1rem;
+    }
+
+    .legal-content h3 {
+        font-family: "Oswald", sans-serif;
+        font-size: 1.5rem;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        color: #fff;
+    }
+
+    .legal-content p {
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.8;
+        margin-bottom: 1.5rem;
+    }
+
+    .legal-content ul {
+        list-style-type: disc;
+        margin-left: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.8;
+    }
+
+    .legal-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .legal-content li strong {
+        color: #fff;
+    }
+
+    .last-updated {
+        font-size: 0.9rem;
+        font-style: italic;
+        opacity: 0.6;
+        margin-bottom: 2rem !important;
+    }
+
+    .reveal-item {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .reveal-item.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>

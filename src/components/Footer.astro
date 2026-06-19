@@ -1,0 +1,176 @@
+---
+
+---
+
+<footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <h2 class="footer-logo">VAPEZONE</h2>
+                <p class="footer-desc">
+                    Tu tienda en línea de confianza. Garantizamos envíos seguros
+                    a todo México, productos originales y atención directa a
+                    través de nuestra comunidad.
+                </p>
+            </div>
+
+            <div class="footer-links">
+                <h3>Comunidad</h3>
+                <ul>
+                    <li>
+                        <a href="https://discord.com" target="_blank"
+                            >Soporte en Discord</a
+                        >
+                    </li>
+                    <li><a href="/faq">Preguntas Frecuentes</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h3>Legal y Envíos</h3>
+                <ul>
+                    <li><a href="/terms">Términos de Servicio</a></li>
+                    <li><a href="/privacy">Política de Privacidad</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<style>
+    .site-footer {
+        background-color: #0a0a0a;
+        color: #fff;
+        padding: 5rem 0 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        font-family: "Inter", sans-serif;
+    }
+
+    .footer-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 5%;
+    }
+
+    .footer-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 3rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    @media (min-width: 768px) {
+        .footer-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    .footer-logo {
+        font-family: "Oswald", sans-serif;
+        font-size: 2rem;
+        letter-spacing: 2px;
+        margin-bottom: 1rem;
+    }
+
+    .footer-desc {
+        color: rgba(255, 255, 255, 0.6);
+        line-height: 1.6;
+        font-size: 0.9rem;
+        max-width: 300px;
+        margin: 0 auto;
+    }
+
+    .footer-links h3,
+    .footer-newsletter h3 {
+        font-family: "Oswald", sans-serif;
+        font-size: 1.2rem;
+        letter-spacing: 1px;
+        margin-bottom: 1.5rem;
+        text-transform: uppercase;
+    }
+
+    .footer-links ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .footer-links a {
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: color 0.3s ease;
+    }
+
+    .footer-links a:hover {
+        color: #fff;
+    }
+
+    .footer-newsletter p {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .newsletter-form {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .newsletter-form input {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 0.8rem 1rem;
+        color: #fff;
+        border-radius: 4px;
+        outline: none;
+    }
+
+    .newsletter-form input:focus {
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .newsletter-form button {
+        background: #fff;
+        color: #000;
+        border: none;
+        padding: 0 1.2rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background 0.3s ease;
+    }
+
+    .newsletter-form button:hover {
+        background: #ccc;
+    }
+
+    .footer-bottom {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 0.85rem;
+    }
+
+    @media (min-width: 768px) {
+        .footer-bottom {
+            flex-direction: row;
+            justify-content: space-between;
+        }
+    }
+
+    .payment-icons {
+        display: flex;
+        gap: 1rem;
+    }
+</style>

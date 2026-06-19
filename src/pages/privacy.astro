@@ -1,0 +1,106 @@
+---
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Política de Privacidad | VapeZone</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <Navbar solid={true} />
+
+        <main class="legal-page">
+            <div class="legal-container reveal-item is-visible">
+                <h1 class="legal-title">Política de Privacidad</h1>
+                
+                <div class="legal-content">
+                    <p>En VapeZone estamos comprometidos con la protección de tus datos personales y tu privacidad. Esta política describe cómo recolectamos y utilizamos tu información cuando visitas o realizas compras en nuestra tienda.</p>
+
+                    <h3>1. Información Recopilada</h3>
+                    <p>Al realizar una compra o intento de compra, recopilamos cierta información de tu dispositivo y tus datos personales (nombre, dirección de envío, información de contacto).</p>
+                    
+                    <h3>2. Uso de la Información</h3>
+                    <p>Utilizamos tus datos de contacto principalmente para coordinar el envío de tus productos a tu domicilio en México y enviarte actualizaciones sobre tu pedido.</p>
+
+                    <h3>3. Seguridad</h3>
+                    <p>Mantenemos estrictas medidas de seguridad técnica para evitar el acceso no autorizado a tus datos. No compartimos, vendemos ni alquilamos tu información a terceros.</p>
+
+                    <h3>4. Cambios a esta Política</h3>
+                    <p>Podemos actualizar esta política ocasionalmente para reflejar cambios en nuestras prácticas. Te notificaremos cualquier modificación sustancial a través de nuestra comunidad en Discord.</p>
+                </div>
+            </div>
+        </main>
+
+        <Footer />
+    </body>
+</html>
+
+<style is:global>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    body {
+        background-color: #000;
+        color: #fff;
+        font-family: "Inter", sans-serif;
+    }
+</style>
+
+<style>
+    .legal-page {
+        padding-top: 4rem;
+        min-height: 100vh;
+        padding-bottom: 5rem;
+    }
+
+    .legal-container {
+        max-width: 800px;
+        margin: 4rem auto;
+        padding: 0 5%;
+    }
+
+    .legal-title {
+        font-family: "Oswald", sans-serif;
+        font-size: 3rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 3rem;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 1rem;
+    }
+
+    .legal-content h3 {
+        font-family: "Oswald", sans-serif;
+        font-size: 1.5rem;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        color: #fff;
+    }
+
+    .legal-content p {
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.8;
+        margin-bottom: 1.5rem;
+    }
+
+    .reveal-item {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .reveal-item.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>

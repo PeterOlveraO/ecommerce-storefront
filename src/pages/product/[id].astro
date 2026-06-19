@@ -1,0 +1,387 @@
+---
+import Navbar from "../../components/Navbar.astro";
+import Footer from "../../components/Footer.astro";
+
+export async function getStaticPaths() {
+    const API_BASE_URL =
+        import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
+    try {
+        const res = await fetch(`${API_BASE_URL}/products?limit=1000`);
+        if (!res.ok) return [];
+        const result = await res.json();
+        if (!result.success || !result.data) return [];
+
+        return result.data.map((product: any) => ({
+            params: { id: product.id },
+            props: { product },
+        }));
+    } catch (e) {
+        console.error("Error fetching products for paths", e);
+        return [];
+    }
+}
+
+const { product } = Astro.props;
+
+let productDetails = null;
+if (product.details) {
+    try {
+        productDetails =
+            typeof product.details === "string"
+                ? JSON.parse(product.details)
+                : product.details;
+    } catch (e) {
+        console.error("Could not parse product details", e);
+    }
+}
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{product.name} | Ecommerce Angel</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <Navbar solid={true} />
+
+        <main class="product-page">
+            <div class="product-container">
+                <div class="product-image-col reveal-item">
+                    <div class="image-wrapper">
+                        {
+                            product.sale_price &&
+                                parseFloat(product.sale_price) <
+                                    parseFloat(product.price) && (
+                                    <span class="sale-badge">Oferta</span>
+                                )
+                        }
+                        <img src={product.image_url} alt={product.name} />
+                    </div>
+                </div>
+
+                <div class="product-info-col reveal-item">
+                    <p class="brand">{product.brand}</p>
+                    <h1 class="title">{product.name}</h1>
+
+                    <div class="price-container">
+                        {
+                            product.sale_price &&
+                            parseFloat(product.sale_price) <
+                                parseFloat(product.price) ? (
+                                <>
+                                    <span class="current-price">
+                                        ${product.sale_price}
+                                    </span>
+                                    <span class="original-price">
+                                        ${product.price}
+                                    </span>
+                                </>
+                            ) : (
+                                <span class="current-price">
+                                    ${product.price}
+                                </span>
+                            )
+                        }
+                    </div>
+
+                    <div class="description">
+                        <p>{product.description}</p>
+                    </div>
+
+                    {
+                        productDetails &&
+                            Object.keys(productDetails).length > 0 && (
+                                <div class="product-details">
+                                    <h3 class="details-title">
+                                        Especificaciones
+                                    </h3>
+                                    <ul class="details-list">
+                                        {Object.entries(productDetails).map(
+                                            ([key, value]) => (
+                                                <li>
+                                                    <span class="detail-key">
+                                                        {key}:
+                                                    </span>
+                                                    <span class="detail-value">
+                                                        {value}
+                                                    </span>
+                                                </li>
+                                            ),
+                                        )}
+                                    </ul>
+                                </div>
+                            )
+                    }
+
+                    <button 
+                        id="add-to-cart-btn" 
+                        class="add-to-cart-btn"
+                        data-product={JSON.stringify({
+                            id: product.id,
+                            name: product.name,
+                            brand: product.brand,
+                            price: product.sale_price && parseFloat(product.sale_price) < parseFloat(product.price) ? product.sale_price : product.price,
+                            image_url: product.image_url
+                        })}
+                    >
+                        AÑADIR AL CARRITO
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <Footer />
+
+        <script>
+            // Simple reveal animation for product page
+            document.addEventListener("DOMContentLoaded", () => {
+                setTimeout(() => {
+                    document
+                        .querySelectorAll(".reveal-item")
+                        .forEach((el, index) => {
+                            setTimeout(() => {
+                                el.classList.add("is-visible");
+                            }, index * 200);
+                        });
+                }, 100);
+
+                // Add to Cart logic
+                const addToCartBtn = document.getElementById("add-to-cart-btn");
+                if (addToCartBtn) {
+                    addToCartBtn.addEventListener("click", () => {
+                        const productData = JSON.parse(addToCartBtn.dataset.product || "{}");
+                        if (window.addToCart) {
+                            window.addToCart(productData);
+                        }
+                    });
+                }
+            });
+        </script>
+    </body>
+</html>
+
+<style>
+    /* Scoped styles */
+    .product-page {
+        padding: 4rem 5%;
+        max-width: 1400px;
+        margin: 0 auto;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+    }
+
+    .product-container {
+        display: flex;
+        flex-direction: column;
+        gap: 4rem;
+        width: 100%;
+    }
+
+    @media (min-width: 900px) {
+        .product-container {
+            flex-direction: row;
+            align-items: center;
+        }
+        .product-image-col,
+        .product-info-col {
+            flex: 1;
+        }
+    }
+
+    .product-image-col {
+        position: relative;
+    }
+
+    .image-wrapper {
+        position: relative;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        overflow: hidden;
+        aspect-ratio: 4/5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .image-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .sale-badge {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: #fff;
+        color: #000;
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        border-radius: 2px;
+        z-index: 10;
+        font-family: "Oswald", sans-serif;
+    }
+
+    .product-info-col {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .brand {
+        font-size: 1.2rem;
+        letter-spacing: 3px;
+        opacity: 0.6;
+        margin-bottom: -1rem;
+        font-family: "Oswald", sans-serif;
+        text-transform: uppercase;
+    }
+
+    .title {
+        font-size: 3.5rem;
+        line-height: 1.1;
+        margin-bottom: 0.5rem;
+        font-family: "Oswald", sans-serif;
+        text-transform: uppercase;
+    }
+
+    .price-container {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .current-price {
+        font-size: 2.5rem;
+        font-weight: 700;
+        font-family: "Oswald", sans-serif;
+        text-transform: uppercase;
+    }
+
+    .original-price {
+        font-size: 1.5rem;
+        text-decoration: line-through;
+        opacity: 0.5;
+    }
+
+    .description {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        opacity: 0.8;
+        margin-bottom: 2rem;
+    }
+
+    .add-to-cart-btn {
+        background: #fff;
+        color: #000;
+        border: none;
+        padding: 1.5rem 3rem;
+        font-size: 1.2rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        cursor: pointer;
+        transition:
+            transform 0.3s ease,
+            background 0.3s ease;
+        border-radius: 4px;
+        width: 100%;
+        max-width: 400px;
+        font-family: "Oswald", sans-serif;
+        text-transform: uppercase;
+    }
+
+    .add-to-cart-btn:hover {
+        transform: translateY(-3px);
+        background: #f0f0f0;
+    }
+
+    .product-details {
+        margin-bottom: 2rem;
+        background: rgba(255, 255, 255, 0.02);
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .details-title {
+        font-family: "Oswald", sans-serif;
+        text-transform: uppercase;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        letter-spacing: 1px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 0.5rem;
+    }
+
+    .details-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .details-list li {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.95rem;
+    }
+
+    .detail-key {
+        opacity: 0.7;
+        font-weight: 300;
+    }
+
+    .detail-value {
+        font-weight: 400;
+        text-align: right;
+    }
+
+    .product-meta {
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 0.9rem;
+        opacity: 0.6;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    /* Animation */
+    .reveal-item {
+        opacity: 0;
+        transform: translateY(30px);
+        transition:
+            opacity 0.8s ease-out,
+            transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .reveal-item.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+
+<style is:global>
+    /* Essential globals for body/html in case they aren't loaded */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    body {
+        background-color: #000;
+        color: #fff;
+        font-family: "Inter", sans-serif;
+    }
+</style>

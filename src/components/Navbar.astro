@@ -1,0 +1,289 @@
+---
+import CartDrawer from "./CartDrawer.astro";
+import AgeGate from "./AgeGate.astro";
+
+interface Props {
+    solid?: boolean;
+}
+
+const { solid = false } = Astro.props;
+
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
+let shopCategoryUrl = "/";
+let shopCategoryName = "SHOP";
+
+try {
+    const res = await fetch(`${API_BASE_URL}/categories`);
+    if (res.ok) {
+        const result = await res.json();
+        if (result.success && result.data) {
+            const cat0 = result.data.find(
+                (c: any) => c.display_order === 0 && c.is_active,
+            );
+            if (cat0) {
+                shopCategoryUrl = `/category/${cat0.id}`;
+                shopCategoryName = cat0.name.toUpperCase();
+            }
+        }
+    }
+} catch (e) {
+    console.error("Error fetching categories for navbar", e);
+}
+---
+
+<AgeGate />
+
+<header class={`navbar ${solid ? "solid" : ""}`}>
+    <a href="/" class="logo mobile-logo">VAPEZONE</a>
+    <nav class="nav-links">
+        <a href={shopCategoryUrl}>{shopCategoryName}</a>
+        <a href="/faq">FAQ</a>
+        <a href="/" class="logo desktop-logo">VAPEZONE</a>
+        <a href="/terms">Terminos</a>
+        <a href="https://discord.gg/38QFybEmZs">DISCORD</a>
+    </nav>
+    <div class="navbar-actions">
+        <button
+            id="nav-cart-btn"
+            class="nav-cart-btn"
+            aria-label="Carrito de compras"
+        >
+            <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+            >
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"
+                ></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            <span id="cart-badge" class="cart-badge">0</span>
+        </button>
+        <button class="hamburger" aria-label="Menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+</header>
+
+<CartDrawer />
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const navbar = document.querySelector(".navbar");
+        window.addEventListener("scroll", () => {
+            if (window.scrollY > window.innerHeight - 80) {
+                navbar?.classList.add("scrolled");
+            } else {
+                navbar?.classList.remove("scrolled");
+            }
+        });
+
+        // Cart toggle logic
+        const cartBtn = document.getElementById("nav-cart-btn");
+        if (cartBtn) {
+            cartBtn.addEventListener("click", () => {
+                if (window.toggleCart) window.toggleCart(true);
+            });
+        }
+
+        // Listen for cart updates to update badge
+        const badge = document.getElementById("cart-badge");
+        document.addEventListener("cart-updated", (e) => {
+            if (badge) {
+                badge.textContent = e.detail;
+                if (e.detail > 0) {
+                    badge.classList.add("active");
+                } else {
+                    badge.classList.remove("active");
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+    /* Navbar */
+    .navbar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        z-index: 1000;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 2rem 5%;
+        background: transparent;
+        transition:
+            padding 0.3s ease,
+            background 0.3s ease;
+    }
+
+    .navbar.scrolled {
+        position: fixed;
+        padding: 1rem 5%;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        animation: slideDown 0.4s ease forwards;
+    }
+
+    .navbar.solid {
+        position: sticky;
+        padding: 1rem 5%;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        animation: none;
+    }
+
+    @keyframes slideDown {
+        from {
+            transform: translateY(-100%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+
+    .logo {
+        font-size: 2.5rem;
+        font-weight: 700;
+        letter-spacing: 4px;
+        font-family: "Oswald", sans-serif;
+        text-transform: uppercase;
+        text-decoration: none;
+        color: #fff;
+    }
+
+    .desktop-logo {
+        display: none;
+    }
+
+    .nav-links {
+        display: none;
+    }
+
+    .nav-links a {
+        color: #fff;
+        text-decoration: none;
+        font-size: 1.15rem;
+        font-weight: 400;
+        letter-spacing: 2px;
+        transition: opacity 0.3s ease;
+        font-family: "Oswald", sans-serif;
+        text-transform: uppercase;
+    }
+
+    .nav-links a:hover {
+        opacity: 0.7;
+    }
+
+    .navbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        z-index: 101;
+    }
+
+    .nav-cart-btn {
+        background: transparent;
+        border: none;
+        color: #fff;
+        cursor: pointer;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem;
+        transition: transform 0.3s;
+    }
+
+    .nav-cart-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .cart-badge {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: #fff;
+        color: #000;
+        font-size: 0.7rem;
+        font-weight: bold;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0);
+        transition: all 0.3s ease;
+    }
+
+    .cart-badge.active {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .hamburger {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        width: 30px;
+        height: 20px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+    }
+
+    .hamburger span {
+        width: 100%;
+        height: 2px;
+        background-color: #fff;
+        transition: all 0.3s linear;
+    }
+
+    /* Desktop */
+    @media (min-width: 768px) {
+        .navbar {
+            justify-content: center;
+            padding-top: 3rem;
+        }
+
+        .navbar.scrolled,
+        .navbar.solid {
+            padding-top: 1rem;
+        }
+
+        .mobile-logo {
+            display: none;
+        }
+
+        .hamburger {
+            display: none;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+        }
+
+        .desktop-logo {
+            display: block;
+            font-size: 4.5rem;
+            margin: 0 3rem;
+            letter-spacing: 6px;
+        }
+    }
+</style>

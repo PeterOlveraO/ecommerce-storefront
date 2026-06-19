@@ -1,17 +1,352 @@
 ---
+import Navbar from '../components/Navbar.astro';
+import HeroCarousel from '../components/HeroCarousel.astro';
+import ProductCard from '../components/ProductCard.astro';
+import Footer from '../components/Footer.astro';
 
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
+
+let headerProducts: any[] = [];
+let categories: any[] = [];
+let gridProducts: any[] = [];
+
+try {
+    // Fetch Header Images
+    const headerRes = await fetch(`${API_BASE_URL}/header-images`);
+    if (headerRes.ok) {
+        const result = await headerRes.json();
+        if (result.success && result.data) {
+            const defaultColors = ["#ff4d88", "#4d88ff", "#4dff88", "#b34dff"];
+            const activeHeaders = result.data
+                .filter((img: any) => img.is_active)
+                .sort((a: any, b: any) => a.display_order - b.display_order);
+
+            headerProducts = await Promise.all(activeHeaders.map(async (img: any, index: number) => {
+                let productData: any = null;
+                let isProductLink = false;
+                let linkUrl = img.link_url || "";
+                
+                if (linkUrl.includes("product/")) {
+                    isProductLink = true;
+                    const parts = linkUrl.split("product/");
+                    if (parts.length > 1) {
+                        const productId = parts[1].replace(/^\//, '');
+                        try {
+                            const prodRes = await fetch(`${API_BASE_URL}/products/${productId}`);
+                            if (prodRes.ok) {
+                                const prodJson = await prodRes.json();
+                                if (prodJson.success && prodJson.data) {
+                                    productData = prodJson.data;
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Error fetching product for banner:", e);
+                        }
+                    }
+                }
+
+                return {
+                    id: img.id,
+                    name: productData ? productData.name : (img.name || "Promo"),
+                    tagline: productData ? productData.brand : (isProductLink ? "Destacado" : "Novedad"),
+                    price: productData ? (productData.sale_price || productData.price) : "",
+                    original_price: productData ? (productData.sale_price ? productData.price : "") : "",
+                    description: productData ? productData.description : "",
+                    image: img.image_url,
+                    color: defaultColors[index % defaultColors.length],
+                    link: linkUrl.startsWith('/') ? linkUrl : `/${linkUrl}`,
+                    is_product: isProductLink
+                };
+            }));
+        }
+    }
+
+    // Fetch Categories and their preview products
+    const catRes = await fetch(`${API_BASE_URL}/categories`);
+    if (catRes.ok) {
+        const catResult = await catRes.json();
+        if (catResult.success && catResult.data) {
+            const activeCats = catResult.data
+                .filter((cat: any) => cat.is_active && cat.display_order >= 1)
+                .sort((a: any, b: any) => a.display_order - b.display_order);
+
+            for (let cat of activeCats) {
+                const catProdRes = await fetch(
+                    `${API_BASE_URL}/products?category_id=${cat.id}&limit=4`,
+                );
+                if (catProdRes.ok) {
+                    const cpResult = await catProdRes.json();
+                    if (cpResult.success && cpResult.data) {
+                        cat.products = cpResult.data
+                            .filter((p: any) => p.is_active)
+                            .sort(
+                                (a: any, b: any) =>
+                                    a.display_order - b.display_order,
+                            )
+                            .slice(0, 4);
+                    } else {
+                        cat.products = [];
+                    }
+                } else {
+                    cat.products = [];
+                }
+            }
+            categories = activeCats.filter(
+                (cat: any) => cat.products && cat.products.length > 0,
+            ).slice(0, 5);
+        }
+    }
+} catch (error) {
+    console.error("Error fetching data:", error);
+}
 ---
 
+<!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Ecommerce Angel</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <Navbar />
+        <HeroCarousel headerProducts={headerProducts} />
+
+        {
+            categories.map((category) => (
+                <section class="store-section container reveal-on-scroll">
+                    <div class="category-header reveal-item">
+                        <h2 class="section-title">{category.name}</h2>
+                        <a
+                            href={`/category/${category.id}`}
+                            class="category-link"
+                        >
+                            Ver todo{" "}
+                            <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path d="M5 12h14M12 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div class="products-grid">
+                        {category.products.map(
+                            (product: any, index: number) => (
+                                <ProductCard product={product} index={index} />
+                            ),
+                        )}
+                    </div>
+                </section>
+            ))
+        }
+
+        <!-- Features / Benefits Section -->
+        <section class="store-features reveal-on-scroll">
+            <div class="container">
+                <div class="features-grid">
+                    <div class="feature-card reveal-item">
+                        <div class="feature-icon">🇲🇽</div>
+                        <h3>Envíos a todo México</h3>
+                        <p>Recibe tus productos de forma rápida y confiable en cualquier rincón del país.</p>
+                    </div>
+                    <div class="feature-card reveal-item" style="transition-delay: 100ms">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Compra Segura</h3>
+                        <p>Tus transacciones y datos están protegidos en todo momento para tu total tranquilidad.</p>
+                    </div>
+                    <div class="feature-card reveal-item" style="transition-delay: 200ms">
+                        <div class="feature-icon">💬</div>
+                        <h3>Soporte vía Discord</h3>
+                        <p>Atención rápida y personalizada. Únete a nuestra comunidad para aclarar cualquier duda.</p>
+                    </div>
+                    <div class="feature-card reveal-item" style="transition-delay: 300ms">
+                        <div class="feature-icon">⚠️</div>
+                        <h3>Política de Ventas</h3>
+                        <p>Garantizamos productos nuevos y sellados. Por motivos de higiene y seguridad, no manejamos devoluciones.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <Footer />
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const observerOptions = {
+                    root: null,
+                    rootMargin: "0px",
+                    threshold: 0.15,
+                };
+
+                const observer = new IntersectionObserver(
+                    (entries, observer) => {
+                        entries.forEach((entry) => {
+                            if (entry.isIntersecting) {
+                                entry.target.classList.add("is-visible");
+                                observer.unobserve(entry.target);
+                            }
+                        });
+                    },
+                    observerOptions,
+                );
+
+                document.querySelectorAll(".reveal-on-scroll").forEach((el) => {
+                    observer.observe(el);
+                });
+            });
+        </script>
+    </body>
 </html>
+
+<style is:global>
+    /* Reset & Base */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: #000;
+        color: #fff;
+        font-family: "Inter", sans-serif;
+        overflow-x: hidden;
+    }
+
+    h1,
+    h2,
+    h3,
+    .product-price {
+        font-family: "Oswald", sans-serif;
+        text-transform: uppercase;
+    }
+
+    /* Reveal Animations */
+    .reveal-item {
+        opacity: 0;
+        transform: translateY(40px);
+        transition:
+            opacity 0.8s ease-out,
+            transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .reveal-on-scroll.is-visible .reveal-item {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Store Sections */
+    .store-section {
+        padding: 5rem 0;
+        margin: 0 auto;
+    }
+    
+    .store-features {
+        padding: 6rem 0;
+        background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.02));
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .features-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    @media (min-width: 768px) {
+        .features-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    @media (min-width: 1024px) {
+        .features-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+    
+    .feature-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 2.5rem 2rem;
+        border-radius: 12px;
+        text-align: center;
+        transition: transform 0.3s ease, background 0.3s ease;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-5px);
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .feature-card h3 {
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        letter-spacing: 1px;
+    }
+    
+    .feature-card p {
+        font-size: 0.95rem;
+        color: rgba(255, 255, 255, 0.6);
+        line-height: 1.6;
+    }
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 5%;
+    }
+    .section-title {
+        font-size: 2.5rem;
+        letter-spacing: 2px;
+    }
+
+    /* Category Header */
+    .category-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 2.5rem;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 1rem;
+    }
+
+    .category-link {
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        opacity: 0.7;
+        font-weight: 400;
+        text-decoration: none;
+        color: #fff;
+        transition: opacity 0.3s;
+        margin-bottom: 0.5rem;
+    }
+    .category-link:hover {
+        opacity: 1;
+    }
+
+    /* Products Grid */
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+    @media (min-width: 768px) {
+        .products-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+</style>

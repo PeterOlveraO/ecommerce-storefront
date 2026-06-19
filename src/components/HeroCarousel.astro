@@ -1,0 +1,370 @@
+---
+interface Props {
+  headerProducts: any[];
+}
+const { headerProducts } = Astro.props;
+---
+<main class="hero-carousel">
+    <div class="carousel-track" id="carousel-track">
+        {
+            headerProducts.map((product) => (
+                <div class="slide" style={`--slide-color: ${product.color}`}>
+                    <div class="slide-bg">
+                        <img src={product.image} alt={product.name} />
+                        <div class="bg-gradient" />
+                        <div class="color-tint" />
+                    </div>
+                    <div class="slide-content">
+                        <div class="product-info-left">
+                            <h1 class="product-name">{product.name}</h1>
+                            <p class="product-tagline">{product.tagline}</p>
+                        </div>
+                        <div class="product-info-right">
+                            {product.price && (
+                                <div class="product-price-container">
+                                    <p class="product-price">${product.price}</p>
+                                    {product.original_price && (
+                                        <p class="product-original-price" style="text-decoration: line-through; opacity: 0.6; font-size: 1.2rem; margin-top: -10px; margin-bottom: 10px;">
+                                            ${product.original_price}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                            {product.description && (
+                                <p class="product-desc">{product.description}</p>
+                            )}
+                            {product.link && product.link !== '/' && (
+                                <a href={product.link} class="add-to-cart" aria-label="Ver más" style="display: flex; align-items: center; justify-content: center; text-decoration: none;">
+                                    <span>→</span>
+                                </a>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            ))
+        }
+    </div>
+
+    <div class="controls">
+        <button class="arrow-btn prev-btn" id="prev-btn" aria-label="Previous">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"></path></svg>
+        </button>
+        <div class="indicators" id="indicators">
+            {
+                headerProducts.map((_, index) => (
+                    <button class={`dot ${index === 0 ? "active" : ""}`} data-index={index} aria-label={`Go to slide ${index + 1}`} />
+                ))
+            }
+        </div>
+        <button class="arrow-btn next-btn" id="next-btn" aria-label="Next">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"></path></svg>
+        </button>
+    </div>
+</main>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const track = document.getElementById("carousel-track");
+        const dots = document.querySelectorAll(".dot");
+        const prevBtn = document.getElementById("prev-btn");
+        const nextBtn = document.getElementById("next-btn");
+        let currentSlide = 0;
+        const slideCount = dots.length;
+        let autoSlideInterval;
+
+        function updateCarousel() {
+            if (track)
+                track.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            dots.forEach((dot, index) => {
+                dot.classList.toggle("active", index === currentSlide);
+            });
+        }
+
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % slideCount;
+            updateCarousel();
+        }
+
+        function startAutoSlide() {
+            clearInterval(autoSlideInterval);
+            autoSlideInterval = setInterval(nextSlide, 3000);
+        }
+
+        dots.forEach((dot) => {
+            dot.addEventListener("click", (e) => {
+                if (e.target instanceof HTMLElement && e.target.dataset.index) {
+                    currentSlide = parseInt(e.target.dataset.index);
+                    updateCarousel();
+                    startAutoSlide();
+                }
+            });
+        });
+
+        if (prevBtn && nextBtn) {
+            prevBtn.addEventListener("click", () => {
+                currentSlide = (currentSlide - 1 + slideCount) % slideCount;
+                updateCarousel();
+                startAutoSlide();
+            });
+
+            nextBtn.addEventListener("click", () => {
+                nextSlide();
+                startAutoSlide();
+            });
+        }
+
+        if (slideCount > 1) {
+            startAutoSlide();
+        }
+    });
+</script>
+
+<style>
+    /* Hero Carousel */
+    .hero-carousel {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .carousel-track {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+    }
+
+    .slide {
+        flex: 0 0 100vw;
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+    }
+
+    .slide-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+
+    .slide-bg img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+    }
+
+    .bg-gradient {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background:
+            linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, transparent 40%),
+            linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, transparent 20%),
+            linear-gradient(to right, rgba(0, 0, 0, 0.6) 0%, transparent 30%);
+    }
+
+    .color-tint {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        height: 60%;
+        background: linear-gradient(to top, var(--slide-color), transparent);
+        opacity: 0.25;
+        mix-blend-mode: overlay;
+    }
+
+    /* Content */
+    .slide-content {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 15% 5%;
+    }
+
+    .product-info-left {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .product-name {
+        font-size: 3.5rem;
+        font-weight: 700;
+        line-height: 1.1;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        font-family: "Oswald", sans-serif;
+        text-transform: uppercase;
+    }
+
+    .product-tagline {
+        font-size: 1.1rem;
+        font-weight: 300;
+        letter-spacing: 2px;
+        opacity: 0.9;
+        text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+    }
+
+    .product-info-right {
+        display: none;
+    }
+
+    /* Controls */
+    .controls {
+        position: absolute;
+        bottom: 5%;
+        left: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 20;
+        padding: 0 5%;
+    }
+
+    .indicators {
+        display: flex;
+        gap: 12px;
+    }
+
+    .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.4);
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .dot.active {
+        background: #fff;
+        transform: scale(1.3);
+    }
+
+    .arrow-btn {
+        display: none;
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        transition: color 0.3s;
+    }
+
+    .arrow-btn:hover {
+        color: #fff;
+    }
+
+    /* Desktop */
+    @media (min-width: 768px) {
+        .color-tint {
+            top: 0;
+            bottom: auto;
+            right: 0;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(
+                to right,
+                transparent,
+                var(--slide-color)
+            );
+            opacity: 0.35;
+        }
+
+        .slide-content {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 6% 6%;
+        }
+
+        .product-info-left {
+            text-align: left;
+            margin-bottom: 0;
+            max-width: 50%;
+        }
+
+        .product-name {
+            font-size: 6rem;
+        }
+
+        .product-tagline {
+            font-size: 1.5rem;
+        }
+
+        .product-info-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            text-align: right;
+            max-width: 30%;
+            gap: 1.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .product-price {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1;
+            font-family: "Oswald", sans-serif;
+            text-transform: uppercase;
+        }
+
+        .product-desc {
+            font-size: 1rem;
+            line-height: 1.6;
+            opacity: 0.8;
+        }
+
+        .add-to-cart {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #fff;
+            color: #000;
+            border: none;
+            font-size: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition:
+                transform 0.3s ease,
+                background 0.3s;
+        }
+
+        .add-to-cart:hover {
+            transform: scale(1.1);
+            background: #f0f0f0;
+        }
+
+        .controls {
+            justify-content: space-between;
+            padding: 0 6%;
+            bottom: 6%;
+        }
+
+        .arrow-btn {
+            display: block;
+        }
+        
+        .indicators {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    }
+</style>

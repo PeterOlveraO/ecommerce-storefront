@@ -1,0 +1,193 @@
+---
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Preguntas Frecuentes | VapeZone</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <Navbar solid={true} />
+
+        <main class="legal-page">
+            <div class="legal-container reveal-item is-visible">
+                <h1 class="legal-title">Preguntas Frecuentes</h1>
+                
+                <div class="legal-content faq-accordion">
+                    <details>
+                        <summary>1. ¿Cuáles son los métodos de pago aceptados?</summary>
+                        <div class="faq-answer">
+                            <p>Por regulaciones actuales, nuestro catálogo funciona mediante pago manual. Aceptamos transferencias bancarias y depósitos en efectivo (Oxxo, farmacias, etc.). Al finalizar tu carrito, la página te proporcionará los datos de depósito y un número de orden único para identificar tu compra.</p>
+                        </div>
+                    </details>
+
+                    <details>
+                        <summary>2. ¿Cómo confirmo el pago de mi pedido?</summary>
+                        <div class="faq-answer">
+                            <p>Una vez realizado tu depósito o transferencia, deberás enviar la foto de tu comprobante junto con tu número de orden a nuestro canal oficial de Discord. Nuestro equipo lo validará rápidamente y pasaremos tu pedido a empaquetado.</p>
+                        </div>
+                    </details>
+
+                    <details>
+                        <summary>3. ¿Existe un mínimo de compra?</summary>
+                        <div class="faq-answer">
+                            <p>Sí. Para poder procesar y asegurar la logística de tu pedido, requerimos un mínimo de compra de $1,000 MXN en productos (sin contar el costo de envío).</p>
+                        </div>
+                    </details>
+
+                    <details>
+                        <summary>4. ¿Hacen envíos a todo México? ¿Cuánto cuesta?</summary>
+                        <div class="faq-answer">
+                            <p>¡Así es! Realizamos envíos a nivel nacional utilizando paqueterías seguras (DHL, Estafeta, UPS, FedEx). El envío tiene un costo fijo de $400 MXN, el cual garantiza un traslado sin riesgo de decomiso, sin exceso de dimensiones y ampara hasta 10 kilos de producto.</p>
+                        </div>
+                    </details>
+
+                    <details>
+                        <summary>5. ¿Cuánto tiempo tengo para pagar mi pedido?</summary>
+                        <div class="faq-answer">
+                            <p>Al generar tu orden en la página, tu stock queda reservado temporalmente. Tienes un máximo de 48 horas para realizar el pago y mandar tu comprobante por Discord. Si se excede este tiempo, el sistema cancelará la orden y los productos regresarán al inventario público.</p>
+                        </div>
+                    </details>
+
+                    <details>
+                        <summary>6. ¿Qué pasa si un producto me aparece agotado?</summary>
+                        <div class="faq-answer">
+                            <p>Nuestro sistema de inventario es en tiempo real. Si un modelo o sabor se marca como agotado, el sistema bloqueará su compra automáticamente. Te invitamos a unirte a nuestro Discord para enterarte de los resurtidos antes que nadie.</p>
+                        </div>
+                    </details>
+
+                    <details>
+                        <summary>7. ¿Venden a menores de edad?</summary>
+                        <div class="faq-answer">
+                            <p>No. La venta de nuestros artículos está estrictamente prohibida a menores de edad. Para navegar en el catálogo y realizar compras en Vapezone, es un requisito indispensable confirmar y ser mayor de 18 años.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </main>
+
+        <Footer />
+    </body>
+</html>
+
+<style is:global>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    body {
+        background-color: #000;
+        color: #fff;
+        font-family: "Inter", sans-serif;
+    }
+</style>
+
+<style>
+    .legal-page {
+        padding-top: 4rem;
+        min-height: 100vh;
+        padding-bottom: 5rem;
+    }
+
+    .legal-container {
+        max-width: 800px;
+        margin: 4rem auto;
+        padding: 0 5%;
+    }
+
+    .legal-title {
+        font-family: "Oswald", sans-serif;
+        font-size: 3rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 3rem;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 1rem;
+    }
+
+    .faq-accordion details {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+        transition: background 0.3s ease;
+    }
+
+    .faq-accordion summary {
+        font-family: "Oswald", sans-serif;
+        font-size: 1.2rem;
+        padding: 1.5rem;
+        cursor: pointer;
+        user-select: none;
+        outline: none;
+        color: #fff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        list-style: none;
+    }
+
+    .faq-accordion summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .faq-accordion summary::after {
+        content: "+";
+        font-size: 1.8rem;
+        font-weight: 300;
+        transition: transform 0.3s ease;
+        line-height: 1;
+    }
+
+    .faq-accordion details[open] summary::after {
+        transform: rotate(45deg);
+    }
+
+    .faq-accordion details[open] summary {
+        background: rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .faq-answer {
+        padding: 1.5rem;
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.8;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .faq-answer p {
+        margin-bottom: 0;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .reveal-item {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .reveal-item.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>

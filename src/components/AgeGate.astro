@@ -1,0 +1,171 @@
+---
+---
+
+<div id="age-gate" class="age-gate-overlay">
+    <div class="age-gate-modal">
+        <div class="age-gate-icon">🔞</div>
+        <h2 class="age-gate-title">Verificación de Edad</h2>
+        <p class="age-gate-text">
+            Los productos mostrados en esta tienda contienen nicotina y son exclusivamente para adultos.
+            <br /><br />
+            <strong>¿Tienes 18 años o más?</strong>
+        </p>
+        <div class="age-gate-buttons">
+            <button id="btn-yes" class="btn-primary">SÍ, TENGO MÁS DE 18</button>
+            <button id="btn-no" class="btn-secondary">NO, SOY MENOR</button>
+        </div>
+        <p class="age-gate-disclaimer">
+            Al hacer clic en "Sí", aceptas nuestros Términos de Servicio y confirmas que cumples con la edad legal requerida.
+        </p>
+    </div>
+</div>
+
+<style>
+    .age-gate-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.95);
+        backdrop-filter: blur(10px);
+        z-index: 99999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 1;
+        visibility: visible;
+        transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+
+    .age-gate-overlay.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+    .age-gate-modal {
+        background: #0a0a0a;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 3rem;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .age-gate-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .age-gate-title {
+        font-family: "Oswald", sans-serif;
+        font-size: 2.2rem;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 1.5rem;
+        color: #fff;
+    }
+
+    .age-gate-text {
+        color: rgba(255, 255, 255, 0.8);
+        font-family: "Inter", sans-serif;
+        line-height: 1.6;
+        margin-bottom: 2.5rem;
+        font-size: 1.05rem;
+    }
+
+    .age-gate-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .age-gate-buttons button {
+        padding: 1.2rem;
+        font-family: "Oswald", sans-serif;
+        font-size: 1.2rem;
+        letter-spacing: 1px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        text-transform: uppercase;
+        transition: transform 0.2s ease, background 0.3s ease;
+    }
+
+    .age-gate-buttons button:hover {
+        transform: translateY(-2px);
+    }
+
+    .btn-primary {
+        background: #fff;
+        color: #000;
+        font-weight: 700;
+    }
+
+    .btn-primary:hover {
+        background: #e0e0e0;
+    }
+
+    .btn-secondary {
+        background: transparent;
+        color: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+    }
+
+    .age-gate-disclaimer {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.4);
+        font-family: "Inter", sans-serif;
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const overlay = document.getElementById("age-gate");
+        const btnYes = document.getElementById("btn-yes");
+        const btnNo = document.getElementById("btn-no");
+
+        // Comprobar si ya verificó su edad
+        const isVerified = localStorage.getItem("ageVerified");
+
+        if (isVerified === "true") {
+            // Si ya está verificado, ocultar inmediatamente
+            if (overlay) {
+                overlay.style.display = "none";
+            }
+        } else {
+            // Si no está verificado, asegurar que no pueda hacer scroll en el fondo
+            document.body.style.overflow = "hidden";
+        }
+
+        if (btnYes && overlay) {
+            btnYes.addEventListener("click", () => {
+                // Guardar verificación y quitar modal
+                localStorage.setItem("ageVerified", "true");
+                overlay.classList.add("hidden");
+                document.body.style.overflow = "auto";
+                
+                // Removerlo del DOM completamente después de la animación
+                setTimeout(() => {
+                    overlay.style.display = "none";
+                }, 400);
+            });
+        }
+
+        if (btnNo) {
+            btnNo.addEventListener("click", () => {
+                // Expulsar a Google
+                window.location.href = "https://www.google.com";
+            });
+        }
+    });
+</script>

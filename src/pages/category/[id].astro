@@ -1,0 +1,355 @@
+---
+import Navbar from '../../components/Navbar.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import Footer from '../../components/Footer.astro';
+
+export async function getStaticPaths() {
+    const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
+    try {
+        const catRes = await fetch(`${API_BASE_URL}/categories?limit=1000`);
+        if (!catRes.ok) return [];
+        const catResult = await catRes.json();
+        if (!catResult.success || !catResult.data) return [];
+        const activeCategories = catResult.data
+            .filter((cat: any) => cat.is_active)
+            .sort((a: any, b: any) => a.display_order - b.display_order);
+        
+        return activeCategories.map((category: any) => ({
+            params: { id: category.id },
+            props: { category, allCategories: activeCategories },
+        }));
+    } catch (e) {
+        console.error("Error fetching categories for paths", e);
+        return [];
+    }
+}
+
+const { category, allCategories } = Astro.props;
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
+
+let products: any[] = [];
+try {
+    const prodRes = await fetch(`${API_BASE_URL}/products?category_id=${category.id}&limit=100`);
+    if (prodRes.ok) {
+        const result = await prodRes.json();
+        if (result.success && result.data) {
+            products = result.data
+                .filter((p: any) => p.is_active)
+                .sort((a: any, b: any) => a.display_order - b.display_order);
+        }
+    }
+} catch (e) {
+    console.error("Error fetching products for category", e);
+}
+---
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{category.name} | Ecommerce Angel</title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <Navbar solid={true} />
+        
+        <main class="category-page">
+            <header class="category-hero">
+                <h1 class="category-title reveal-item">{category.name}</h1>
+                <p class="category-subtitle reveal-item" style="transition-delay: 0.1s;">Explora nuestra colección de {category.name.toLowerCase()}</p>
+            </header>
+
+            <div class="shop-layout container">
+                <aside class="shop-sidebar reveal-item" style="transition-delay: 0.2s;">
+                    <div class="filter-group">
+                        <h3 class="filter-title">Categorías</h3>
+                        <ul class="category-list">
+                            {allCategories.map((cat: any) => (
+                                <li>
+                                    <a 
+                                        href={`/category/${cat.id}`} 
+                                        class={cat.id === category.id ? "active" : ""}
+                                    >
+                                        {cat.name}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <div class="filter-group">
+                        <h3 class="filter-title">Filtrar por Precio</h3>
+                        <div class="price-inputs">
+                            <input type="number" id="min-price" placeholder="Min $" min="0" />
+                            <span>-</span>
+                            <input type="number" id="max-price" placeholder="Max $" min="0" />
+                        </div>
+                        <button id="apply-price-btn" class="filter-btn">Aplicar Filtro</button>
+                        <button id="reset-price-btn" class="filter-btn reset-btn">Restablecer</button>
+                    </div>
+                </aside>
+
+                <div class="shop-content">
+                    {products.length > 0 ? (
+                        <div class="products-grid" id="products-grid">
+                            {products.map((product: any, index: number) => (
+                                <ProductCard product={product} index={index} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div class="empty-state reveal-item">
+                            <p>No hay productos disponibles en esta categoría por el momento.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </main>
+        
+        <Footer />
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                setTimeout(() => {
+                    document.querySelectorAll('.reveal-item').forEach((el) => {
+                        el.classList.add('is-visible');
+                    });
+                }, 100);
+
+                // Price Filter Logic
+                const minInput = document.getElementById('min-price') as HTMLInputElement;
+                const maxInput = document.getElementById('max-price') as HTMLInputElement;
+                const applyBtn = document.getElementById('apply-price-btn');
+                const resetBtn = document.getElementById('reset-price-btn');
+                const productCards = document.querySelectorAll('.product-card');
+
+                function filterProducts() {
+                    const min = parseFloat(minInput.value) || 0;
+                    const max = parseFloat(maxInput.value) || Infinity;
+
+                    productCards.forEach((card) => {
+                        const htmlCard = card as HTMLElement;
+                        const price = parseFloat(htmlCard.dataset.price || '0');
+                        
+                        if (price >= min && price <= max) {
+                            htmlCard.style.display = 'flex';
+                        } else {
+                            htmlCard.style.display = 'none';
+                        }
+                    });
+                }
+
+                function resetFilters() {
+                    if(minInput) minInput.value = '';
+                    if(maxInput) maxInput.value = '';
+                    productCards.forEach((card) => {
+                        (card as HTMLElement).style.display = 'flex';
+                    });
+                }
+
+                if(applyBtn) applyBtn.addEventListener('click', filterProducts);
+                if(resetBtn) resetBtn.addEventListener('click', resetFilters);
+            });
+        </script>
+    </body>
+</html>
+
+<style>
+    .category-page {
+        padding-top: 4rem;
+        min-height: 100vh;
+        padding-bottom: 5rem;
+    }
+
+    .category-hero {
+        text-align: center;
+        margin-bottom: 4rem;
+        padding: 0 5%;
+    }
+
+    .category-title {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        font-family: "Oswald", sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .category-subtitle {
+        font-size: 1.2rem;
+        opacity: 0.7;
+        font-weight: 300;
+    }
+
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 5%;
+    }
+
+    .shop-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 3rem;
+    }
+
+    @media (min-width: 900px) {
+        .shop-layout {
+            flex-direction: row;
+            align-items: flex-start;
+        }
+
+        .shop-sidebar {
+            width: 250px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 100px;
+        }
+
+        .shop-content {
+            flex-grow: 1;
+        }
+    }
+
+    .filter-group {
+        margin-bottom: 2.5rem;
+        background: rgba(255, 255, 255, 0.02);
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .filter-title {
+        font-family: "Oswald", sans-serif;
+        font-size: 1.2rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 1.2rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .category-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .category-list a {
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        transition: color 0.3s ease, padding-left 0.3s ease;
+        display: block;
+    }
+
+    .category-list a:hover {
+        color: #fff;
+        padding-left: 5px;
+    }
+
+    .category-list a.active {
+        color: #fff;
+        font-weight: bold;
+        border-left: 2px solid #fff;
+        padding-left: 10px;
+    }
+
+    .price-inputs {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .price-inputs input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-family: "Inter", sans-serif;
+        outline: none;
+    }
+
+    .price-inputs input:focus {
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .filter-btn {
+        width: 100%;
+        padding: 0.8rem;
+        background: #fff;
+        color: #000;
+        border: none;
+        border-radius: 4px;
+        font-family: "Oswald", sans-serif;
+        text-transform: uppercase;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.3s, transform 0.3s;
+        margin-bottom: 0.5rem;
+    }
+
+    .filter-btn:hover {
+        background: #e0e0e0;
+        transform: translateY(-2px);
+    }
+
+    .reset-btn {
+        background: transparent;
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .reset-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+        opacity: 0.7;
+    }
+
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+    
+    @media (min-width: 768px) {
+        .products-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    .reveal-item {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    
+    .reveal-item.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+
+<style is:global>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    body {
+        background-color: #000;
+        color: #fff;
+        font-family: "Inter", sans-serif;
+    }
+</style>
