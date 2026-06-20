@@ -2,26 +2,25 @@
 import Navbar from "../../components/Navbar.astro";
 import Footer from "../../components/Footer.astro";
 
-export async function getStaticPaths() {
-    const API_BASE_URL =
-        import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
-    try {
-        const res = await fetch(`${API_BASE_URL}/products?limit=1000`);
-        if (!res.ok) return [];
-        const result = await res.json();
-        if (!result.success || !result.data) return [];
+const { id } = Astro.params;
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
 
-        return result.data.map((product: any) => ({
-            params: { id: product.id },
-            props: { product },
-        }));
-    } catch (e) {
-        console.error("Error fetching products for paths", e);
-        return [];
+let product = null;
+try {
+    const res = await fetch(`${API_BASE_URL}/products/${id}`);
+    if (res.ok) {
+        const result = await res.json();
+        if (result.success && result.data) {
+            product = result.data;
+        }
     }
+} catch (e) {
+    console.error("Error fetching product details", e);
 }
 
-const { product } = Astro.props;
+if (!product) {
+    return Astro.redirect('/404');
+}
 
 let productDetails = null;
 if (product.details) {
@@ -42,6 +41,8 @@ if (product.details) {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{product.name} | Ecommerce Angel</title>
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link
             href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
             rel="stylesheet"
