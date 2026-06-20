@@ -1,8 +1,8 @@
 ---
-import Navbar from '../components/Navbar.astro';
-import HeroCarousel from '../components/HeroCarousel.astro';
-import ProductCard from '../components/ProductCard.astro';
-import Footer from '../components/Footer.astro';
+import Navbar from "../components/Navbar.astro";
+import HeroCarousel from "../components/HeroCarousel.astro";
+import ProductCard from "../components/ProductCard.astro";
+import Footer from "../components/Footer.astro";
 
 const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
 
@@ -21,43 +21,62 @@ try {
                 .filter((img: any) => img.is_active)
                 .sort((a: any, b: any) => a.display_order - b.display_order);
 
-            headerProducts = await Promise.all(activeHeaders.map(async (img: any, index: number) => {
-                let productData: any = null;
-                let isProductLink = false;
-                let linkUrl = img.link_url || "";
-                
-                if (linkUrl.includes("product/")) {
-                    isProductLink = true;
-                    const parts = linkUrl.split("product/");
-                    if (parts.length > 1) {
-                        const productId = parts[1].replace(/^\//, '');
-                        try {
-                            const prodRes = await fetch(`${API_BASE_URL}/products/${productId}`);
-                            if (prodRes.ok) {
-                                const prodJson = await prodRes.json();
-                                if (prodJson.success && prodJson.data) {
-                                    productData = prodJson.data;
+            headerProducts = await Promise.all(
+                activeHeaders.map(async (img: any, index: number) => {
+                    let productData: any = null;
+                    let isProductLink = false;
+                    let linkUrl = img.link_url || "";
+
+                    if (linkUrl.includes("product/")) {
+                        isProductLink = true;
+                        const parts = linkUrl.split("product/");
+                        if (parts.length > 1) {
+                            const productId = parts[1].replace(/^\//, "");
+                            try {
+                                const prodRes = await fetch(
+                                    `${API_BASE_URL}/products/${productId}`,
+                                );
+                                if (prodRes.ok) {
+                                    const prodJson = await prodRes.json();
+                                    if (prodJson.success && prodJson.data) {
+                                        productData = prodJson.data;
+                                    }
                                 }
+                            } catch (e) {
+                                console.error(
+                                    "Error fetching product for banner:",
+                                    e,
+                                );
                             }
-                        } catch (e) {
-                            console.error("Error fetching product for banner:", e);
                         }
                     }
-                }
 
-                return {
-                    id: img.id,
-                    name: productData ? productData.name : (img.name || "Promo"),
-                    tagline: productData ? productData.brand : (isProductLink ? "Destacado" : "Novedad"),
-                    price: productData ? (productData.sale_price || productData.price) : "",
-                    original_price: productData ? (productData.sale_price ? productData.price : "") : "",
-                    description: productData ? productData.description : "",
-                    image: img.image_url,
-                    color: defaultColors[index % defaultColors.length],
-                    link: linkUrl.startsWith('/') ? linkUrl : `/${linkUrl}`,
-                    is_product: isProductLink
-                };
-            }));
+                    return {
+                        id: img.id,
+                        name: productData
+                            ? productData.name
+                            : img.name || "Promo",
+                        tagline: productData
+                            ? productData.brand
+                            : isProductLink
+                              ? "Destacado"
+                              : "Novedad",
+                        price: productData
+                            ? productData.sale_price || productData.price
+                            : "",
+                        original_price: productData
+                            ? productData.sale_price
+                                ? productData.price
+                                : ""
+                            : "",
+                        description: productData ? productData.description : "",
+                        image: img.image_url,
+                        color: defaultColors[index % defaultColors.length],
+                        link: linkUrl.startsWith("/") ? linkUrl : `/${linkUrl}`,
+                        is_product: isProductLink,
+                    };
+                }),
+            );
         }
     }
 
@@ -91,9 +110,9 @@ try {
                     cat.products = [];
                 }
             }
-            categories = activeCats.filter(
-                (cat: any) => cat.products && cat.products.length > 0,
-            ).slice(0, 5);
+            categories = activeCats
+                .filter((cat: any) => cat.products && cat.products.length > 0)
+                .slice(0, 5);
         }
     }
 } catch (error) {
@@ -106,7 +125,7 @@ try {
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Ecommerce Angel</title>
+        <title>Vapezone</title>
         <link
             href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
             rel="stylesheet"
@@ -157,22 +176,44 @@ try {
                     <div class="feature-card reveal-item">
                         <div class="feature-icon">🇲🇽</div>
                         <h3>Envíos a todo México</h3>
-                        <p>Recibe tus productos de forma rápida y confiable en cualquier rincón del país.</p>
+                        <p>
+                            Recibe tus productos de forma rápida y confiable en
+                            cualquier rincón del país.
+                        </p>
                     </div>
-                    <div class="feature-card reveal-item" style="transition-delay: 100ms">
+                    <div
+                        class="feature-card reveal-item"
+                        style="transition-delay: 100ms"
+                    >
                         <div class="feature-icon">🔒</div>
                         <h3>Compra Segura</h3>
-                        <p>Tus transacciones y datos están protegidos en todo momento para tu total tranquilidad.</p>
+                        <p>
+                            Tus transacciones y datos están protegidos en todo
+                            momento para tu total tranquilidad.
+                        </p>
                     </div>
-                    <div class="feature-card reveal-item" style="transition-delay: 200ms">
+                    <div
+                        class="feature-card reveal-item"
+                        style="transition-delay: 200ms"
+                    >
                         <div class="feature-icon">💬</div>
                         <h3>Soporte vía Discord</h3>
-                        <p>Atención rápida y personalizada. Únete a nuestra comunidad para aclarar cualquier duda.</p>
+                        <p>
+                            Atención rápida y personalizada. Únete a nuestra
+                            comunidad para aclarar cualquier duda.
+                        </p>
                     </div>
-                    <div class="feature-card reveal-item" style="transition-delay: 300ms">
+                    <div
+                        class="feature-card reveal-item"
+                        style="transition-delay: 300ms"
+                    >
                         <div class="feature-icon">⚠️</div>
                         <h3>Política de Ventas</h3>
-                        <p>Garantizamos productos nuevos y sellados. Por motivos de higiene y seguridad, no manejamos devoluciones.</p>
+                        <p>
+                            Garantizamos productos nuevos y sellados. Por
+                            motivos de higiene y seguridad, no manejamos
+                            devoluciones.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -249,13 +290,17 @@ try {
         padding: 5rem 0;
         margin: 0 auto;
     }
-    
+
     .store-features {
         padding: 6rem 0;
-        background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.02));
+        background: linear-gradient(
+            to bottom,
+            transparent,
+            rgba(255, 255, 255, 0.02)
+        );
         border-top: 1px solid rgba(255, 255, 255, 0.05);
     }
-    
+
     .features-grid {
         display: grid;
         grid-template-columns: 1fr;
@@ -271,32 +316,34 @@ try {
             grid-template-columns: repeat(4, 1fr);
         }
     }
-    
+
     .feature-card {
         background: rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.05);
         padding: 2.5rem 2rem;
         border-radius: 12px;
         text-align: center;
-        transition: transform 0.3s ease, background 0.3s ease;
+        transition:
+            transform 0.3s ease,
+            background 0.3s ease;
     }
-    
+
     .feature-card:hover {
         transform: translateY(-5px);
         background: rgba(255, 255, 255, 0.05);
     }
-    
+
     .feature-icon {
         font-size: 2.5rem;
         margin-bottom: 1.5rem;
     }
-    
+
     .feature-card h3 {
         font-size: 1.2rem;
         margin-bottom: 1rem;
         letter-spacing: 1px;
     }
-    
+
     .feature-card p {
         font-size: 0.95rem;
         color: rgba(255, 255, 255, 0.6);
