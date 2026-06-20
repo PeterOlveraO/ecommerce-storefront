@@ -2,25 +2,26 @@
 import Navbar from "../../components/Navbar.astro";
 import Footer from "../../components/Footer.astro";
 
-const { id } = Astro.params;
-const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
-
-let product = null;
-try {
-    const res = await fetch(`${API_BASE_URL}/products/${id}`);
-    if (res.ok) {
+export async function getStaticPaths() {
+    const API_BASE_URL =
+        import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
+    try {
+        const res = await fetch(`${API_BASE_URL}/products?limit=1000`);
+        if (!res.ok) return [];
         const result = await res.json();
-        if (result.success && result.data) {
-            product = result.data;
-        }
+        if (!result.success || !result.data) return [];
+
+        return result.data.map((product: any) => ({
+            params: { id: product.id },
+            props: { product },
+        }));
+    } catch (e) {
+        console.error("Error fetching products for paths", e);
+        return [];
     }
-} catch (e) {
-    console.error("Error fetching product details", e);
 }
 
-if (!product) {
-    return Astro.redirect('/404');
-}
+const { product } = Astro.props;
 
 let productDetails = null;
 if (product.details) {
