@@ -43,7 +43,6 @@ try {
 
     <!-- ZONA CENTRO: LINKS -->
     <nav class="nav-center">
-        <a href={shopCategoryUrl}>{shopCategoryName}</a>
         <a href="/faq">FAQ</a>
         <a href="/terms">Términos</a>
         <a href="https://discord.gg/38QFybEmZs">Discord</a>
@@ -119,9 +118,9 @@ try {
         <a href="/faq">FAQ</a>
         <a href="/terms">Términos</a>
         <a href="https://discord.gg/38QFybEmZs">Discord</a>
-        
+
         <div class="sidebar-divider"></div>
-        
+
         <div id="sidebar-auth-section" class="sidebar-auth-section">
             <a href="/login">Iniciar sesión</a>
             <a href="/register" class="sidebar-highlight">Registrarse</a>
@@ -199,7 +198,9 @@ try {
         const closeSidebarBtn = document.getElementById("close-sidebar-btn");
         const mobileSidebar = document.getElementById("mobile-sidebar");
         const mobileOverlay = document.getElementById("mobile-overlay");
-        const sidebarAuthSection = document.getElementById("sidebar-auth-section");
+        const sidebarAuthSection = document.getElementById(
+            "sidebar-auth-section",
+        );
 
         function openSidebar() {
             mobileSidebar?.classList.add("open");
@@ -227,13 +228,15 @@ try {
                     <a href="/orders">Mis Pedidos</a>
                     <a href="#" id="sidebar-logout-btn" style="color: #f44336;">Cerrar Sesión</a>
                 `;
-                
-                document.getElementById("sidebar-logout-btn")?.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    localStorage.removeItem("angel_user");
-                    localStorage.removeItem("angel_token");
-                    window.location.reload();
-                });
+
+                document
+                    .getElementById("sidebar-logout-btn")
+                    ?.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        localStorage.removeItem("angel_user");
+                        localStorage.removeItem("angel_token");
+                        window.location.reload();
+                    });
             } catch (e) {}
         }
 
