@@ -1,0 +1,309 @@
+---
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Mis Pedidos | Vapezone</title>
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400;600&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <Navbar solid={true} />
+
+        <main class="orders-container">
+            <div class="orders-header">
+                <h1>Historial de Pedidos</h1>
+                <p>Revisa el estado y los detalles de tus compras.</p>
+            </div>
+
+            <div id="orders-list" class="orders-list">
+                <div class="loading-state">Cargando pedidos...</div>
+            </div>
+        </main>
+
+        <Footer />
+
+        <script>
+            document.addEventListener("DOMContentLoaded", async () => {
+                const token = localStorage.getItem("angel_token");
+                if (!token) {
+                    window.location.href = "/login?redirect=orders";
+                    return;
+                }
+
+                const API_BASE_URL = "http://localhost:3000";
+                const ordersList = document.getElementById("orders-list");
+
+                if (!ordersList) return;
+
+                try {
+                    const res = await fetch(`${API_BASE_URL}/orders`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.success && data.data) {
+                            let baseOrders = data.data;
+                            if (baseOrders.length === 0) {
+                                ordersList.innerHTML = `
+                                    <div class="empty-state">
+                                        <p>Aún no tienes pedidos.</p>
+                                        <a href="/" class="shop-btn">Ir a la tienda</a>
+                                    </div>
+                                `;
+                                return;
+                            }
+
+                            // Obtener los detalles (incluyendo ítems) de cada orden
+                            const orders = await Promise.all(baseOrders.map(async (o: any) => {
+                                try {
+                                    const detailRes = await fetch(`${API_BASE_URL}/orders/${o.id}`, {
+                                        headers: { Authorization: `Bearer ${token}` }
+                                    });
+                                    if (detailRes.ok) {
+                                        const detailData = await detailRes.json();
+                                        if (detailData.success && detailData.data) {
+                                            return detailData.data;
+                                        }
+                                    }
+                                } catch (err) {
+                                    console.error("Error fetching details for order", o.id);
+                                }
+                                return o; // Fallback a la orden básica
+                            }));
+
+                            // Sort orders by id descending
+                            orders.sort((a: any, b: any) => {
+                                // id is a string like "123", so we can use localeCompare or parse
+                                return String(b.id).localeCompare(String(a.id));
+                            });
+
+                            // Render orders
+                            ordersList.innerHTML = orders.map((order: any) => {
+                                const date = new Date(order.created_at).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
+                                
+                                // Map items
+                                let itemsHtml = '';
+                                if (order.items && order.items.length > 0) {
+                                    itemsHtml = order.items.map((item: any) => `
+                                        <div class="order-item">
+                                            <span class="item-name">${item.product_name || 'Producto'} x${item.quantity}</span>
+                                            <span class="item-price">$${item.line_total || item.unit_price}</span>
+                                        </div>
+                                    `).join('');
+                                } else {
+                                    itemsHtml = '<div class="order-item"><span class="item-name" style="opacity: 0.5;">Artículos no disponibles</span></div>';
+                                }
+
+                                const statusClass = 'status-' + (order.status ? order.status.toLowerCase() : 'pending');
+
+                                return `
+                                    <div class="order-card">
+                                        <div class="order-card-header">
+                                            <div class="order-meta">
+                                                <span class="order-id">Pedido #${order.id}</span>
+                                                <span class="order-date">${date}</span>
+                                            </div>
+                                            <span class="order-status ${statusClass}">${order.status || 'Pendiente'}</span>
+                                        </div>
+                                        <div class="order-items">
+                                            ${itemsHtml}
+                                        </div>
+                                        <div class="order-footer">
+                                            <div class="order-total-label">Total</div>
+                                            <div class="order-total-amount">$${order.total}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+                        } else {
+                            throw new Error("Formato de respuesta inválido");
+                        }
+                    } else {
+                        throw new Error("No autorizado");
+                    }
+                } catch (e) {
+                    ordersList.innerHTML = `
+                        <div class="error-state">
+                            <p>Ocurrió un error al cargar tus pedidos.</p>
+                        </div>
+                    `;
+                }
+            });
+        </script>
+
+        <style is:global>
+            body {
+                background-color: #000;
+                color: #fff;
+                font-family: "Inter", sans-serif;
+                margin: 0;
+            }
+
+            .orders-container {
+                padding: 120px 5% 60px;
+                max-width: 800px;
+                margin: 0 auto;
+                min-height: 80vh;
+            }
+
+            .orders-header {
+                text-align: center;
+                margin-bottom: 3rem;
+            }
+
+            .orders-header h1 {
+                font-family: "Oswald", sans-serif;
+                font-size: 2.5rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .orders-header p {
+                color: #aaa;
+            }
+
+            .loading-state, .empty-state, .error-state {
+                text-align: center;
+                padding: 4rem 2rem;
+                background: #0a0a0a;
+                border: 1px solid #222;
+                border-radius: 12px;
+                color: #aaa;
+            }
+
+            .shop-btn {
+                display: inline-block;
+                margin-top: 1.5rem;
+                padding: 0.8rem 1.5rem;
+                background: #fff;
+                color: #000;
+                text-decoration: none;
+                font-family: "Oswald", sans-serif;
+                font-weight: 700;
+                border-radius: 8px;
+                transition: background 0.3s;
+            }
+
+            .shop-btn:hover {
+                background: #e0e0e0;
+            }
+
+            .orders-list {
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .order-card {
+                background: #0a0a0a;
+                border: 1px solid #222;
+                border-radius: 12px;
+                overflow: hidden;
+            }
+
+            .order-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1.5rem;
+                background: rgba(255, 255, 255, 0.02);
+                border-bottom: 1px solid #222;
+            }
+
+            .order-meta {
+                display: flex;
+                flex-direction: column;
+                gap: 0.3rem;
+            }
+
+            .order-id {
+                font-family: "Oswald", sans-serif;
+                font-size: 1.2rem;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+            }
+
+            .order-date {
+                font-size: 0.85rem;
+                color: #888;
+            }
+
+            .order-status {
+                padding: 0.4rem 1rem;
+                border-radius: 99px;
+                font-size: 0.85rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                border: 1px solid #444;
+                color: #ccc;
+                background: #222;
+            }
+
+            .status-pending, .status-pendiente { background: rgba(255, 152, 0, 0.1); color: #ff9800; border: 1px solid rgba(255, 152, 0, 0.3); }
+            .status-processing, .status-procesando { background: rgba(33, 150, 243, 0.1); color: #2196f3; border: 1px solid rgba(33, 150, 243, 0.3); }
+            .status-shipped, .status-enviado { background: rgba(156, 39, 176, 0.1); color: #9c27b0; border: 1px solid rgba(156, 39, 176, 0.3); }
+            .status-delivered, .status-entregado { background: rgba(76, 175, 80, 0.1); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.3); }
+            .status-cancelled, .status-cancelado { background: rgba(244, 67, 54, 0.1); color: #f44336; border: 1px solid rgba(244, 67, 54, 0.3); }
+            .status-completed, .status-completado { background: rgba(76, 175, 80, 0.1); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.3); }
+
+            .order-items {
+                padding: 1.5rem;
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .order-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 0.95rem;
+                color: #ccc;
+            }
+
+            .item-price {
+                font-family: "Oswald", sans-serif;
+                color: #fff;
+            }
+
+            .order-footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1.5rem;
+                background: rgba(255, 255, 255, 0.02);
+                border-top: 1px solid #222;
+            }
+
+            .order-total-label {
+                font-size: 0.95rem;
+                color: #aaa;
+            }
+
+            .order-total-amount {
+                font-family: "Oswald", sans-serif;
+                font-size: 1.5rem;
+                font-weight: 700;
+                color: #fff;
+            }
+
+            @media (max-width: 600px) {
+                .order-card-header {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 1rem;
+                }
+            }
+        </style>
+    </body>
+</html>

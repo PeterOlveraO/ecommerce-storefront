@@ -1,0 +1,767 @@
+---
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Checkout | Angel Ecommerce</title>
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400;600;700&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <Navbar solid={true} />
+
+        <main class="checkout-container">
+            <div class="checkout-header">
+                <h1>Finalizar Compra</h1>
+                <p>Completa tus datos para confirmar tu orden.</p>
+            </div>
+
+            <div class="checkout-content">
+                <!-- Columna Izquierda: Formularios -->
+                <div class="checkout-forms">
+                    <section class="checkout-section">
+                        <h2>1. Datos de Envío</h2>
+                        <form id="shipping-form" class="generic-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="first_name">Nombre</label>
+                                    <input
+                                        type="text"
+                                        id="first_name"
+                                        placeholder="Tu nombre"
+                                    />
+                                </div>
+                                <div class="form-group">
+                                    <label for="last_name">Apellidos</label>
+                                    <input
+                                        type="text"
+                                        id="last_name"
+                                        placeholder="Tus apellidos"
+                                    />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label for="street_address">Calle</label>
+                                    <input
+                                        type="text"
+                                        id="street_address"
+                                        placeholder="Av. Siempre Viva"
+                                    />
+                                </div>
+                                <div class="form-group half">
+                                    <label for="exterior_number"
+                                        >Núm Exterior</label
+                                    >
+                                    <input
+                                        type="text"
+                                        id="exterior_number"
+                                        placeholder="123"
+                                    />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label for="neighborhood"
+                                        >Colonia / Barrio</label
+                                    >
+                                    <input
+                                        type="text"
+                                        id="neighborhood"
+                                        placeholder="Centro"
+                                    />
+                                </div>
+                                <div class="form-group half">
+                                    <label for="state">Estado</label>
+                                    <input
+                                        type="text"
+                                        id="state"
+                                        placeholder="Ej. Nuevo León"
+                                    />
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group half">
+                                    <label for="city">Ciudad</label>
+                                    <input
+                                        type="text"
+                                        id="city"
+                                        placeholder="Ej. Monterrey"
+                                    />
+                                </div>
+                                <div class="form-group half">
+                                    <label for="postal_code"
+                                        >Código Postal</label
+                                    >
+                                    <input
+                                        type="text"
+                                        id="postal_code"
+                                        placeholder="12345"
+                                    />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="notes"
+                                    >Notas para el envío (Opcional)</label
+                                >
+                                <textarea
+                                    id="notes"
+                                    rows="2"
+                                    placeholder="Ej. Dejar en recepción"
+                                ></textarea>
+                            </div>
+                        </form>
+                    </section>
+
+                    <section class="checkout-section">
+                        <h2>2. Método de Pago</h2>
+                        <div
+                            class="payment-methods"
+                            id="payment-methods-container"
+                        >
+                            <p class="loading-text">
+                                Cargando métodos de pago...
+                            </p>
+                            <!-- JS will populate this -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Columna Derecha: Resumen de Orden -->
+                <div class="checkout-summary">
+                    <div class="summary-box">
+                        <h2>Resumen de tu Orden</h2>
+
+                        <div class="summary-items" id="summary-items">
+                            <!-- JS will populate this from cart -->
+                        </div>
+
+                        <div class="summary-totals">
+                            <div class="total-row">
+                                <span>Subtotal</span>
+                                <span id="summary-subtotal">$0.00</span>
+                            </div>
+                            <div class="total-row">
+                                <span>Envío</span>
+                                <span id="summary-shipping">$400.00</span>
+                            </div>
+                            <div class="total-row grand-total">
+                                <span>Total a Pagar</span>
+                                <span id="summary-total">$0.00</span>
+                            </div>
+                        </div>
+
+                        <button id="confirm-pay-btn" class="pay-btn"
+                            >CONFIRMAR Y PAGAR</button
+                        >
+                        <div id="payment-msg" class="payment-msg"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <Footer />
+    </body>
+</html>
+
+<script>
+    document.addEventListener("DOMContentLoaded", async () => {
+        const token = localStorage.getItem("angel_token");
+        if (!token) {
+            window.location.href = "/login?redirect=checkout";
+            return;
+        }
+
+        const API_BASE_URL = "http://localhost:3000";
+        let cart = JSON.parse(localStorage.getItem("angel_cart") || "[]");
+
+        if (cart.length === 0) {
+            window.location.href = "/";
+            return;
+        }
+
+        let selectedPaymentMethodId = "";
+        let shippingCost = 400.0; // Costo fijo
+        let subtotal = 0;
+
+        // Elementos del DOM
+        const summaryItemsEl = document.getElementById("summary-items");
+        const subtotalEl = document.getElementById("summary-subtotal");
+        const totalEl = document.getElementById("summary-total");
+        const paymentMethodsContainer = document.getElementById(
+            "payment-methods-container",
+        );
+        const payBtn = document.getElementById("confirm-pay-btn");
+        const msgEl = document.getElementById("payment-msg");
+        const notesEl = document.getElementById("notes");
+
+        // 1. Renderizar Resumen
+        function renderSummary() {
+            let html = "";
+            subtotal = 0;
+
+            cart.forEach((item) => {
+                const price = parseFloat(item.price);
+                const lineTotal = price * item.quantity;
+                subtotal += lineTotal;
+
+                html += `
+                    <div class="summary-item">
+                        <div class="s-item-img">
+                            <img src="${item.image_url}" alt="${item.name}" />
+                        </div>
+                        <div class="s-item-info">
+                            <h4>${item.name}</h4>
+                            ${item.variant_id ? '<p class="s-variant">Variante seleccionada</p>' : ""}
+                            <p class="s-qty">Cant: ${item.quantity}</p>
+                        </div>
+                        <div class="s-item-price">
+                            $${lineTotal.toFixed(2)}
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (summaryItemsEl) summaryItemsEl.innerHTML = html;
+            if (subtotalEl) subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+            if (totalEl)
+                totalEl.textContent = `$${(subtotal + shippingCost).toFixed(2)}`;
+
+            if (subtotal < 1000) {
+                if (msgEl) {
+                    msgEl.textContent = `El pedido mínimo es de $1,000.00 MXN. Faltan $${(1000 - subtotal).toFixed(2)} MXN.`;
+                    msgEl.style.color = "#ff4d4d";
+                }
+                if (payBtn) (payBtn as HTMLButtonElement).disabled = true;
+            } else {
+                if (msgEl) msgEl.textContent = "";
+                if (payBtn) (payBtn as HTMLButtonElement).disabled = false;
+            }
+        }
+
+        // 2. Cargar Perfil para pre-llenar form (Opcional)
+        async function loadProfile() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/me`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.data) {
+                        const user = data.data;
+                        const firstNameEl = document.getElementById(
+                            "first_name",
+                        ) as HTMLInputElement;
+                        const lastNameEl = document.getElementById(
+                            "last_name",
+                        ) as HTMLInputElement;
+                        const streetAddressEl = document.getElementById(
+                            "street_address",
+                        ) as HTMLInputElement;
+                        const extNumberEl = document.getElementById(
+                            "exterior_number",
+                        ) as HTMLInputElement;
+                        const neighborhoodEl = document.getElementById(
+                            "neighborhood",
+                        ) as HTMLInputElement;
+                        const stateEl = document.getElementById(
+                            "state",
+                        ) as HTMLInputElement;
+                        const cityEl = document.getElementById(
+                            "city",
+                        ) as HTMLInputElement;
+                        const postalCodeEl = document.getElementById(
+                            "postal_code",
+                        ) as HTMLInputElement;
+
+                        if (firstNameEl && user.first_name)
+                            firstNameEl.value = user.first_name;
+                        if (lastNameEl && user.last_name)
+                            lastNameEl.value = user.last_name;
+                        if (streetAddressEl && user.street_address)
+                            streetAddressEl.value = user.street_address;
+                        if (extNumberEl && user.exterior_number)
+                            extNumberEl.value = user.exterior_number;
+                        if (neighborhoodEl && user.neighborhood)
+                            neighborhoodEl.value = user.neighborhood;
+                        if (stateEl && user.state) stateEl.value = user.state;
+                        if (cityEl && user.city) cityEl.value = user.city;
+                        if (postalCodeEl && user.postal_code)
+                            postalCodeEl.value = user.postal_code;
+                    }
+                }
+            } catch (e) {
+                console.error("Error al cargar perfil", e);
+            }
+        }
+
+        // 3. Cargar Métodos de Pago
+        async function loadPaymentMethods() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/payment-methods`);
+                const data = await res.json();
+
+                if (data.success && data.data && data.data.length > 0) {
+                    let html = "";
+                    data.data.forEach((pm, index) => {
+                        // Selecciona el primero por defecto
+                        if (index === 0) selectedPaymentMethodId = pm.id;
+
+                        html += `
+                            <label class="pm-option ${index === 0 ? "selected" : ""}">
+                                <input type="radio" name="payment_method" value="${pm.id}" ${index === 0 ? "checked" : ""} />
+                                <div class="pm-info">
+                                    <span class="pm-name">${pm.method} - ${pm.bank}</span>
+                                    <span class="pm-desc">Titular: ${pm.account_holder} <br> Cuenta: ${pm.account_number}</span>
+                                </div>
+                            </label>
+                        `;
+                    });
+                    if (paymentMethodsContainer)
+                        paymentMethodsContainer.innerHTML = html;
+
+                    // Escuchar cambios
+                    document
+                        .querySelectorAll('input[name="payment_method"]')
+                        .forEach((radio) => {
+                            radio.addEventListener("change", (e) => {
+                                const target = e.target as HTMLInputElement;
+                                selectedPaymentMethodId = target.value;
+                                document
+                                    .querySelectorAll(".pm-option")
+                                    .forEach((opt) =>
+                                        opt.classList.remove("selected"),
+                                    );
+                                target
+                                    .closest(".pm-option")
+                                    ?.classList.add("selected");
+                            });
+                        });
+                } else {
+                    if (paymentMethodsContainer)
+                        paymentMethodsContainer.innerHTML =
+                            "<p>No hay métodos de pago disponibles.</p>";
+                }
+            } catch (e) {
+                console.error("Error métodos de pago", e);
+                if (paymentMethodsContainer)
+                    paymentMethodsContainer.innerHTML =
+                        "<p>Error al cargar métodos de pago.</p>";
+            }
+        }
+
+        // 4. Procesar Pago
+        async function handlePay() {
+            if (!selectedPaymentMethodId) {
+                alert("Por favor selecciona un método de pago.");
+                return;
+            }
+
+            const notesValue = (notesEl as HTMLTextAreaElement)?.value || "";
+            const form = document.getElementById(
+                "shipping-form",
+            ) as HTMLFormElement;
+
+            // Basic HTML5 validation
+            if (form && !form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            if (payBtn) (payBtn as HTMLButtonElement).disabled = true;
+            if (msgEl) {
+                msgEl.textContent = "Procesando pago y creando orden...";
+                msgEl.style.color = "#fff";
+            }
+
+            const selectedRadio = document.querySelector(
+                'input[name="payment_method"]:checked',
+            ) as HTMLInputElement;
+            let finalNotes = notesValue;
+
+            // Detect if user provided an alternate shipping address
+            const altStreet = (
+                document.getElementById("street_address") as HTMLInputElement
+            )?.value;
+            const altExt = (
+                document.getElementById("exterior_number") as HTMLInputElement
+            )?.value;
+            const altNeigh = (
+                document.getElementById("neighborhood") as HTMLInputElement
+            )?.value;
+            const altState = (
+                document.getElementById("state") as HTMLInputElement
+            )?.value;
+            const altCity = (
+                document.getElementById("city") as HTMLInputElement
+            )?.value;
+            const altZip = (
+                document.getElementById("postal_code") as HTMLInputElement
+            )?.value;
+
+            if (
+                altStreet ||
+                altExt ||
+                altNeigh ||
+                altState ||
+                altCity ||
+                altZip
+            ) {
+                const altAddress = [
+                    altStreet,
+                    altExt,
+                    altNeigh,
+                    altCity,
+                    altState,
+                    altZip,
+                ]
+                    .filter(Boolean)
+                    .join(", ");
+                finalNotes += finalNotes
+                    ? `\nDirección alterna de envío: ${altAddress}`
+                    : `Dirección alterna de envío: ${altAddress}`;
+            }
+
+            try {
+                // Procesar la orden
+                const payload = {
+                    payment_method_id: selectedPaymentMethodId,
+                    items: cart.map((item) => ({
+                        product_id: item.id,
+                        ...(item.variant_id && { variant_id: item.variant_id }),
+                        quantity: item.quantity,
+                    })),
+                    shipping_cost: shippingCost,
+                    notes: finalNotes,
+                };
+
+                const res = await fetch(`${API_BASE_URL}/orders`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const result = await res.json();
+
+                if (res.ok && result.success) {
+                    if (msgEl) {
+                        msgEl.textContent = `¡Compra Exitosa! Redirigiendo...`;
+                        msgEl.style.color = "#4caf50";
+                    }
+                    localStorage.removeItem("angel_cart"); // Limpiar carrito
+
+                    // Disparar evento para que se actualice la UI del carrito si es necesario
+                    document.dispatchEvent(
+                        new CustomEvent("cart-updated", { detail: 0 }),
+                    );
+
+                    setTimeout(() => {
+                        window.location.href = "/"; // O redirigir a un /thank-you
+                    }, 2000);
+                } else {
+                    throw new Error(
+                        result.message || "Error al procesar orden",
+                    );
+                }
+            } catch (err) {
+                console.error("Payment Error:", err);
+                if (msgEl) {
+                    msgEl.textContent =
+                        err.message ||
+                        "Error al procesar el pago. Intente de nuevo.";
+                    msgEl.style.color = "#f44336";
+                }
+                if (payBtn) (payBtn as HTMLButtonElement).disabled = false;
+            }
+        }
+
+        // Iniciar
+        renderSummary();
+        loadProfile();
+        loadPaymentMethods();
+
+        payBtn?.addEventListener("click", handlePay);
+    });
+</script>
+
+<style is:global>
+    body {
+        background-color: #000;
+        color: #fff;
+        font-family: "Inter", sans-serif;
+        margin: 0;
+    }
+
+    .checkout-container {
+        padding: 120px 5% 60px; /* offset for navbar */
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .checkout-header {
+        margin-bottom: 3rem;
+        text-align: center;
+    }
+
+    .checkout-header h1 {
+        font-family: "Inter", sans-serif;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .checkout-header p {
+        color: #aaa;
+        font-size: 1.1rem;
+    }
+
+    .checkout-content {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 4rem;
+    }
+
+    /* Formularios */
+    .checkout-section {
+        background: #0a0a0a;
+        border: 1px solid #222;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .checkout-section h2 {
+        font-family: "Inter", sans-serif;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid #222;
+        padding-bottom: 1rem;
+    }
+
+    .generic-form .form-row {
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .generic-form .form-group {
+        flex: 1;
+        margin-bottom: 1.5rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .generic-form label {
+        font-size: 0.9rem;
+        color: #ccc;
+        margin-bottom: 0.5rem;
+    }
+
+    .generic-form input,
+    .generic-form textarea {
+        background: #000;
+        border: 1px solid #333;
+        color: #fff;
+        padding: 0.8rem 1rem;
+        border-radius: 6px;
+        font-family: "Inter", sans-serif;
+        transition: border-color 0.3s;
+    }
+
+    .generic-form input:focus,
+    .generic-form textarea:focus {
+        outline: none;
+        border-color: #666;
+    }
+
+    /* Metodos de pago */
+    .pm-option {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border: 1px solid #333;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: #000;
+    }
+
+    .pm-option:hover {
+        border-color: #555;
+    }
+
+    .pm-option.selected {
+        border-color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .pm-option input {
+        accent-color: #fff;
+        width: 18px;
+        height: 18px;
+    }
+
+    .pm-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pm-name {
+        font-weight: 600;
+        font-size: 1.05rem;
+    }
+
+    .pm-desc {
+        font-size: 0.85rem;
+        color: #888;
+        margin-top: 0.2rem;
+    }
+
+    /* Resumen */
+    .checkout-summary {
+        position: relative;
+    }
+
+    .summary-box {
+        background: #0a0a0a;
+        border: 1px solid #222;
+        border-radius: 12px;
+        padding: 2rem;
+        position: sticky;
+        top: 120px;
+    }
+
+    .summary-box h2 {
+        font-family: "Inter", sans-serif;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid #222;
+        padding-bottom: 1rem;
+    }
+
+    .summary-items {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .summary-item {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .s-item-img img {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        background: #111;
+        border-radius: 6px;
+    }
+
+    .s-item-info {
+        flex: 1;
+    }
+
+    .s-item-info h4 {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 400;
+    }
+
+    .s-variant,
+    .s-qty {
+        font-size: 0.8rem;
+        color: #888;
+        margin: 0.2rem 0 0;
+    }
+
+    .s-item-price {
+        font-weight: 600;
+        font-family: "Inter", sans-serif;
+    }
+
+    .summary-totals {
+        border-top: 1px solid #222;
+        padding-top: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.8rem;
+        color: #aaa;
+    }
+
+    .total-row.grand-total {
+        color: #fff;
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px dashed #333;
+    }
+
+    .pay-btn {
+        width: 100%;
+        padding: 1rem;
+        background: #fff;
+        color: #000;
+        border: none;
+        border-radius: 8px;
+        font-family: "Inter", sans-serif;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .pay-btn:hover {
+        background: #e0e0e0;
+    }
+
+    .pay-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .payment-msg {
+        margin-top: 1rem;
+        text-align: center;
+        font-size: 0.9rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+        .checkout-content {
+            grid-template-columns: 1fr;
+        }
+        .summary-box {
+            position: static;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .generic-form .form-row {
+            flex-direction: column;
+            gap: 0;
+        }
+    }
+</style>

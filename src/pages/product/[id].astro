@@ -21,7 +21,24 @@ export async function getStaticPaths() {
     }
 }
 
-const { product } = Astro.props;
+const { product: basicProduct } = Astro.props;
+
+// Fetch full product details including variants
+let fullProduct = basicProduct;
+try {
+    const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
+    const res = await fetch(`${API_BASE_URL}/products/${basicProduct.id}`);
+    if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+            fullProduct = json.data;
+        }
+    }
+} catch (e) {
+    console.error("Error fetching full product details", e);
+}
+
+const product = fullProduct;
 
 let productDetails = null;
 if (product.details) {
@@ -34,6 +51,8 @@ if (product.details) {
         console.error("Could not parse product details", e);
     }
 }
+
+const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
 ---
 
 <!doctype html>
@@ -97,6 +116,33 @@ if (product.details) {
                     </div>
 
                     {
+                        activeVariants.length > 0 && (
+                            <div class="product-variants">
+                                <h3 class="variants-title">Selecciona una opción:</h3>
+                                <div class="variants-grid" id="variants-container">
+                                    {activeVariants.map((variant: any) => {
+                                        const isOutOfStock = variant.stock === 0;
+                                        return (
+                                            <button 
+                                                class={`variant-btn ${isOutOfStock ? 'disabled' : ''}`}
+                                                data-id={variant.id}
+                                                data-name={variant.variante1 + (variant.variante2 ? ` - ${variant.variante2}` : '')}
+                                                data-stock={variant.stock}
+                                                disabled={isOutOfStock}
+                                            >
+                                                {variant.variante1}
+                                                {variant.variante2 && ` - ${variant.variante2}`}
+                                                {isOutOfStock && ' (Agotado)'}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <p id="variant-error" class="variant-error" style="display: none; color: #ff4d4d; margin-top: 10px;">Por favor, selecciona una opción antes de añadir al carrito.</p>
+                            </div>
+                        )
+                    }
+
+                    {
                         productDetails &&
                             Object.keys(productDetails).length > 0 && (
                                 <div class="product-details">
@@ -129,7 +175,8 @@ if (product.details) {
                             name: product.name,
                             brand: product.brand,
                             price: product.sale_price && parseFloat(product.sale_price) < parseFloat(product.price) ? product.sale_price : product.price,
-                            image_url: product.image_url
+                            image_url: product.image_url,
+                            stock: product.stock
                         })}
                     >
                         AÑADIR AL CARRITO
@@ -153,11 +200,46 @@ if (product.details) {
                         });
                 }, 100);
 
+                // Variant Selection Logic
+                let selectedVariantId = null;
+                let selectedVariantName = null;
+                const hasVariants = document.querySelectorAll('.variant-btn').length > 0;
+                const variantBtns = document.querySelectorAll('.variant-btn');
+                const variantError = document.getElementById('variant-error');
+
+                variantBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        variantBtns.forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        selectedVariantId = btn.getAttribute('data-id');
+                        selectedVariantName = btn.getAttribute('data-name');
+                        if (variantError) variantError.style.display = 'none';
+                    });
+                });
+
                 // Add to Cart logic
                 const addToCartBtn = document.getElementById("add-to-cart-btn");
                 if (addToCartBtn) {
                     addToCartBtn.addEventListener("click", () => {
+                        if (hasVariants && !selectedVariantId) {
+                            if (variantError) variantError.style.display = 'block';
+                            return;
+                        }
+
                         const productData = JSON.parse(addToCartBtn.dataset.product || "{}");
+                        
+                        if (selectedVariantId) {
+                            productData.variant_id = selectedVariantId;
+                            // Append variant name to the product name for the cart display
+                            productData.name = `${productData.name} - ${selectedVariantName}`;
+                            
+                            // Override the product stock with the specific variant's stock
+                            const variantBtn = document.querySelector(`.variant-btn[data-id="${selectedVariantId}"]`);
+                            if (variantBtn) {
+                                productData.stock = parseInt(variantBtn.getAttribute('data-stock') || '0', 10);
+                            }
+                        }
+
                         if (window.addToCart) {
                             window.addToCart(productData);
                         }
@@ -281,7 +363,54 @@ if (product.details) {
         font-size: 1.1rem;
         line-height: 1.8;
         opacity: 0.8;
+        margin-bottom: 1rem;
+    }
+
+    /* Variants Styles */
+    .product-variants {
         margin-bottom: 2rem;
+    }
+
+    .variants-title {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .variants-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+    }
+
+    .variant-btn {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #fff;
+        padding: 0.8rem 1.2rem;
+        border-radius: 6px;
+        font-family: "Inter", sans-serif;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .variant-btn:hover:not(.disabled) {
+        border-color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .variant-btn.selected {
+        border-color: #fff;
+        background: #fff;
+        color: #000;
+        font-weight: 600;
+    }
+
+    .variant-btn.disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        text-decoration: line-through;
     }
 
     .add-to-cart-btn {

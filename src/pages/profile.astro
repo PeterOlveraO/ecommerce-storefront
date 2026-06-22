@@ -1,0 +1,311 @@
+---
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+---
+
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Mi Perfil | Vapezone</title>
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400;600&display=swap"
+            rel="stylesheet"
+        />
+    </head>
+    <body>
+        <Navbar solid={true} />
+
+        <main class="profile-container">
+            <div class="profile-header">
+                <h1>Mi Información Personal</h1>
+                <p>Gestiona tus datos de envío y contacto.</p>
+            </div>
+
+            <div class="profile-card">
+                <form id="profile-form" class="generic-form">
+                    <div class="form-group">
+                        <label for="phone">Teléfono de Contacto</label>
+                        <input type="text" id="phone" required minlength="7" />
+                    </div>
+
+                    <h3 class="section-title">Dirección de Envío Principal</h3>
+
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="street_address">Calle</label>
+                            <input type="text" id="street_address" required />
+                        </div>
+                        <div class="form-group half">
+                            <label for="exterior_number">Núm Exterior</label>
+                            <input type="text" id="exterior_number" required />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="neighborhood">Colonia / Barrio</label>
+                            <input type="text" id="neighborhood" />
+                        </div>
+                        <div class="form-group half">
+                            <label for="state">Estado</label>
+                            <input type="text" id="state" required />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label for="city">Ciudad</label>
+                            <input type="text" id="city" required />
+                        </div>
+                        <div class="form-group half">
+                            <label for="postal_code">Código Postal</label>
+                            <input type="text" id="postal_code" required />
+                        </div>
+                    </div>
+
+                    <button type="submit" id="save-btn" class="save-btn"
+                        >GUARDAR CAMBIOS</button
+                    >
+                    <div id="profile-msg" class="profile-msg"></div>
+                </form>
+            </div>
+        </main>
+
+        <Footer />
+
+        <script>
+            document.addEventListener("DOMContentLoaded", async () => {
+                const token = localStorage.getItem("angel_token");
+                if (!token) {
+                    window.location.href = "/login?redirect=profile";
+                    return;
+                }
+
+                const API_BASE_URL = "http://localhost:3000";
+                const form = document.getElementById("profile-form");
+                const btn = document.getElementById("save-btn");
+                const msg = document.getElementById("profile-msg");
+
+                // Cargar datos
+                try {
+                    const res = await fetch(`${API_BASE_URL}/me`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.success && data.data) {
+                            const user = data.data;
+                            [
+                                "first_name",
+                                "last_name",
+                                "phone",
+                                "street_address",
+                                "exterior_number",
+                                "neighborhood",
+                                "state",
+                                "city",
+                                "postal_code",
+                            ].forEach((id) => {
+                                const el = document.getElementById(
+                                    id,
+                                ) as HTMLInputElement;
+                                if (el && user[id]) el.value = user[id];
+                            });
+                        }
+                    } else {
+                        throw new Error("No autorizado");
+                    }
+                } catch (e) {
+                    window.location.href = "/login?redirect=profile";
+                    return;
+                }
+
+                // Guardar datos (PUT /me)
+                form?.addEventListener("submit", async (e) => {
+                    e.preventDefault();
+                    if (btn) (btn as HTMLButtonElement).disabled = true;
+                    if (msg) {
+                        msg.textContent = "Guardando...";
+                        msg.className = "profile-msg";
+                    }
+
+                    const payload: any = {};
+                    [
+                        "first_name",
+                        "last_name",
+                        "phone",
+                        "street_address",
+                        "exterior_number",
+                        "neighborhood",
+                        "state",
+                        "city",
+                        "postal_code",
+                    ].forEach((id) => {
+                        const val = (
+                            document.getElementById(id) as HTMLInputElement
+                        )?.value;
+                        if (val) payload[id] = val;
+                    });
+
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/me`, {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${token}`,
+                            },
+                            body: JSON.stringify(payload),
+                        });
+
+                        if (res.ok) {
+                            if (msg) {
+                                msg.textContent =
+                                    "¡Perfil actualizado exitosamente!";
+                                msg.className = "profile-msg success";
+                            }
+                        } else {
+                            throw new Error("Error al actualizar");
+                        }
+                    } catch (e) {
+                        if (msg) {
+                            msg.textContent =
+                                "Ocurrió un error al guardar los cambios.";
+                            msg.className = "profile-msg error";
+                        }
+                    } finally {
+                        if (btn) (btn as HTMLButtonElement).disabled = false;
+                    }
+                });
+            });
+        </script>
+
+        <style is:global>
+            body {
+                background-color: #000;
+                color: #fff;
+                font-family: "Inter", sans-serif;
+                margin: 0;
+            }
+
+            .profile-container {
+                padding: 120px 5% 60px;
+                max-width: 800px;
+                margin: 0 auto;
+                min-height: 80vh;
+            }
+
+            .profile-header {
+                text-align: center;
+                margin-bottom: 3rem;
+            }
+
+            .profile-header h1 {
+                font-family: "Oswald", sans-serif;
+                font-size: 2.5rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .profile-header p {
+                color: #aaa;
+            }
+
+            .profile-card {
+                background: #0a0a0a;
+                border: 1px solid #222;
+                border-radius: 12px;
+                padding: 2.5rem;
+            }
+
+            .section-title {
+                font-family: "Oswald", sans-serif;
+                font-size: 1.3rem;
+                margin: 2rem 0 1.5rem;
+                padding-bottom: 0.5rem;
+                border-bottom: 1px solid #222;
+            }
+
+            .form-row {
+                display: flex;
+                gap: 1.5rem;
+            }
+
+            .form-group {
+                margin-bottom: 1.5rem;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .form-group.half {
+                flex: 1;
+            }
+
+            .generic-form label {
+                font-size: 0.9rem;
+                color: #ccc;
+                margin-bottom: 0.5rem;
+            }
+
+            .generic-form input {
+                background: #000;
+                border: 1px solid #333;
+                color: #fff;
+                padding: 0.8rem 1rem;
+                border-radius: 6px;
+                font-family: "Inter", sans-serif;
+                transition: border-color 0.3s;
+            }
+
+            .generic-form input:focus {
+                outline: none;
+                border-color: #666;
+            }
+
+            .save-btn {
+                width: 100%;
+                padding: 1rem;
+                background: #fff;
+                color: #000;
+                border: none;
+                border-radius: 8px;
+                font-family: "Oswald", sans-serif;
+                font-size: 1.1rem;
+                font-weight: 700;
+                cursor: pointer;
+                transition: background 0.3s;
+                margin-top: 1rem;
+            }
+
+            .save-btn:hover {
+                background: #e0e0e0;
+            }
+
+            .save-btn:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+            .profile-msg {
+                margin-top: 1rem;
+                text-align: center;
+                font-size: 0.95rem;
+                min-height: 20px;
+            }
+
+            .profile-msg.success {
+                color: #4caf50;
+            }
+
+            .profile-msg.error {
+                color: #f44336;
+            }
+
+            @media (max-width: 600px) {
+                .form-row {
+                    flex-direction: column;
+                    gap: 0;
+                }
+            }
+        </style>
+    </body>
+</html>

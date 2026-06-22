@@ -8,6 +8,7 @@ const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
 
 let headerProducts: any[] = [];
 let categories: any[] = [];
+let allCategories: any[] = [];
 let gridProducts: any[] = [];
 
 try {
@@ -89,6 +90,8 @@ try {
                 .filter((cat: any) => cat.is_active && cat.display_order >= 1)
                 .sort((a: any, b: any) => a.display_order - b.display_order);
 
+            allCategories = activeCats;
+
             for (let cat of activeCats) {
                 const catProdRes = await fetch(
                     `${API_BASE_URL}/products?category_id=${cat.id}&limit=4`,
@@ -97,7 +100,7 @@ try {
                     const cpResult = await catProdRes.json();
                     if (cpResult.success && cpResult.data) {
                         cat.products = cpResult.data
-                            .filter((p: any) => p.is_active)
+                            .filter((p: any) => p.is_active && p.featured != 1 && p.featured !== true && p.featured !== "1")
                             .sort(
                                 (a: any, b: any) =>
                                     a.display_order - b.display_order,
@@ -137,39 +140,69 @@ try {
         <Navbar />
         <HeroCarousel headerProducts={headerProducts} />
 
-        {
-            categories.map((category) => (
-                <section class="store-section container reveal-on-scroll">
-                    <div class="category-header reveal-item">
-                        <h2 class="section-title">{category.name}</h2>
-                        <a
-                            href={`/category/${category.id}`}
-                            class="category-link"
-                        >
-                            Ver todo{" "}
-                            <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <path d="M5 12h14M12 5l7 7-7 7" />
-                            </svg>
-                        </a>
+        <div class="shop-layout container" style="margin-top: 4rem;">
+            <aside class="shop-sidebar">
+                <div class="filter-group">
+                    <h3 class="filter-title">Buscar Producto</h3>
+                    <div class="search-wrapper" style="position: relative;">
+                        <input type="text" id="product-search" placeholder="Escribe para buscar..." autocomplete="off" />
+                        <div id="search-dropdown" class="search-dropdown"></div>
                     </div>
+                </div>
 
-                    <div class="products-grid">
-                        {category.products.map(
-                            (product: any, index: number) => (
-                                <ProductCard product={product} index={index} />
-                            ),
-                        )}
-                    </div>
-                </section>
-            ))
-        }
+                <div class="filter-group">
+                    <h3 class="filter-title">Categorías</h3>
+                    <ul class="category-list">
+                        <li>
+                            <a href="/" class="active">Inicio</a>
+                        </li>
+                        {allCategories.map((cat: any) => (
+                            <li>
+                                <a href={`/category/${cat.id}`}>
+                                    {cat.name}
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </aside>
+
+            <div class="shop-content">
+                {
+                    categories.map((category) => (
+                        <section class="store-section reveal-on-scroll">
+                            <div class="category-header reveal-item">
+                                <h2 class="section-title">{category.name}</h2>
+                                <a
+                                    href={`/category/${category.id}`}
+                                    class="category-link"
+                                >
+                                    Ver todo{" "}
+                                    <svg
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <path d="M5 12h14M12 5l7 7-7 7" />
+                                    </svg>
+                                </a>
+                            </div>
+
+                            <div class="products-grid">
+                                {category.products.map(
+                                    (product: any, index: number) => (
+                                        <ProductCard product={product} index={index} />
+                                    ),
+                                )}
+                            </div>
+                        </section>
+                    ))
+                }
+            </div>
+        </div>
 
         <!-- Features / Benefits Section -->
         <section class="store-features reveal-on-scroll">
@@ -246,6 +279,71 @@ try {
                 document.querySelectorAll(".reveal-on-scroll").forEach((el) => {
                     observer.observe(el);
                 });
+
+                // Home page search logic (Dropdown)
+                const searchInput = document.getElementById('product-search') as HTMLInputElement;
+                const searchDropdown = document.getElementById('search-dropdown');
+                
+                let allProducts: any[] = [];
+                let isFetching = false;
+                
+                if (searchInput && searchDropdown) {
+                    searchInput.addEventListener('focus', async () => {
+                        if (allProducts.length === 0 && !isFetching) {
+                            isFetching = true;
+                            try {
+                                const API_BASE_URL = "http://localhost:3000";
+                                const res = await fetch(`${API_BASE_URL}/products?limit=1000`);
+                                const json = await res.json();
+                                if (json.success) {
+                                    allProducts = json.data.filter((p: any) => p.is_active);
+                                }
+                            } catch (e) {
+                                console.error("Error fetching products for search", e);
+                            }
+                        }
+                    });
+
+                    searchInput.addEventListener('input', () => {
+                        const term = searchInput.value.toLowerCase().trim();
+                        if (term.length === 0) {
+                            searchDropdown.style.display = 'none';
+                            return;
+                        }
+                        
+                        const matches = allProducts.filter(p => 
+                            (p.name && p.name.toLowerCase().includes(term)) || 
+                            (p.brand && p.brand.toLowerCase().includes(term))
+                        ).slice(0, 6);
+                        
+                        if (matches.length > 0) {
+                            searchDropdown.innerHTML = matches.map(p => {
+                                const price = p.sale_price && parseFloat(p.sale_price) < parseFloat(p.price) ? p.sale_price : p.price;
+                                return `
+                                <a href="/product/${p.id}" class="search-result-item">
+                                    <img src="${p.image_url}" alt="${p.name}">
+                                    <div class="search-result-info">
+                                        <span class="sr-brand">${p.brand || ''}</span>
+                                        <span class="sr-name">${p.name}</span>
+                                        <span class="sr-price">$${price}</span>
+                                    </div>
+                                </a>
+                                `;
+                            }).join('');
+                            searchDropdown.style.display = 'block';
+                        } else {
+                            searchDropdown.innerHTML = '<div class="sr-empty">No se encontraron productos</div>';
+                            searchDropdown.style.display = 'block';
+                        }
+                    });
+                    
+                    document.addEventListener('click', (e) => {
+                        const target = e.target as Node;
+                        if (!searchInput.contains(target) && !searchDropdown.contains(target)) {
+                            searchDropdown.style.display = 'none';
+                        }
+                    });
+                }
             });
         </script>
     </body>
@@ -289,7 +387,7 @@ try {
 
     /* Store Sections */
     .store-section {
-        padding: 5rem 0;
+        padding: 0 0 5rem 0;
         margin: 0 auto;
     }
 
@@ -352,7 +450,7 @@ try {
         line-height: 1.6;
     }
     .container {
-        max-width: 1200px;
+        max-width: 1400px;
         margin: 0 auto;
         padding: 0 5%;
     }
@@ -397,5 +495,159 @@ try {
         .products-grid {
             grid-template-columns: repeat(4, 1fr);
         }
+    }
+
+    /* Layout & Sidebar */
+    .shop-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 3rem;
+    }
+
+    @media (min-width: 900px) {
+        .shop-layout {
+            flex-direction: row;
+            align-items: flex-start;
+        }
+
+        .shop-sidebar {
+            width: 250px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 20px;
+            z-index: 10;
+        }
+
+        .shop-content {
+            flex-grow: 1;
+            width: calc(100% - 250px - 3rem);
+        }
+    }
+
+    .filter-group {
+        margin-bottom: 2.5rem;
+        background: rgba(255, 255, 255, 0.02);
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .filter-title {
+        font-family: "Oswald", sans-serif;
+        font-size: 1.2rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 1.2rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .category-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .category-list a {
+        color: rgba(255, 255, 255, 0.6);
+        text-decoration: none;
+        transition: color 0.3s ease, padding-left 0.3s ease;
+        display: block;
+    }
+
+    .category-list a:hover {
+        color: #fff;
+        padding-left: 5px;
+    }
+
+    .category-list a.active {
+        color: #fff;
+        font-weight: bold;
+        border-left: 2px solid #fff;
+        padding-left: 10px;
+    }
+
+    .search-wrapper input {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-family: "Inter", sans-serif;
+        outline: none;
+    }
+
+    .search-wrapper input:focus {
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .search-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background: #111;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        margin-top: 5px;
+        max-height: 400px;
+        overflow-y: auto;
+        display: none;
+        z-index: 100;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    
+    .search-result-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        text-decoration: none;
+        color: #fff;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        transition: background 0.2s;
+    }
+    
+    .search-result-item:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    
+    .search-result-item img {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+        background: #000;
+    }
+    
+    .search-result-info {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .sr-brand {
+        font-size: 0.7rem;
+        opacity: 0.5;
+        text-transform: uppercase;
+    }
+    
+    .sr-name {
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .sr-price {
+        font-size: 0.8rem;
+        color: #fff;
+        font-family: 'Oswald', sans-serif;
+    }
+    
+    .sr-empty {
+        padding: 15px;
+        text-align: center;
+        font-size: 0.9rem;
+        opacity: 0.6;
     }
 </style>

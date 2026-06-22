@@ -21,7 +21,7 @@
             <span>Subtotal</span>
             <span id="cart-subtotal">$0.00</span>
         </div>
-        <p class="shipping-note">Costo de envío se calculará en el siguiente paso.</p>
+        <p class="shipping-note">Costo de envío: $400.00 MXN.</p>
         <button id="checkout-btn" class="checkout-btn">FINALIZAR COMPRA</button>
         <div id="checkout-message" class="checkout-message"></div>
     </div>
@@ -55,10 +55,19 @@
         };
 
         window.addToCart = (product) => {
-            const existingItem = cart.find(item => item.id === product.id);
+            // Check matching ID and variant (if applicable)
+            const existingItem = cart.find(item => item.id === product.id && item.variant_id === product.variant_id);
             if (existingItem) {
+                if (existingItem.quantity + 1 > product.stock) {
+                    alert(`Solo hay ${product.stock} unidades disponibles en stock.`);
+                    return;
+                }
                 existingItem.quantity += 1;
             } else {
+                if (1 > product.stock) {
+                    alert(`Producto sin stock disponible.`);
+                    return;
+                }
                 cart.push({ ...product, quantity: 1 });
             }
             saveCart();
@@ -76,18 +85,23 @@
             updateCartBadge();
         }
 
-        function removeFromCart(id) {
-            cart = cart.filter(item => item.id !== id);
+        function removeFromCart(id, variant_id) {
+            cart = cart.filter(item => !(item.id === id && item.variant_id === variant_id));
             saveCart();
             renderCart();
         }
 
-        function changeQuantity(id, delta) {
-            const item = cart.find(item => item.id === id);
+        function changeQuantity(id, variant_id, delta) {
+            const item = cart.find(item => item.id === id && item.variant_id === variant_id);
             if (item) {
-                item.quantity += delta;
+                const newQuantity = item.quantity + delta;
+                if (newQuantity > item.stock) {
+                    alert(`Solo hay ${item.stock} unidades disponibles en stock.`);
+                    return;
+                }
+                item.quantity = newQuantity;
                 if (item.quantity <= 0) {
-                    removeFromCart(id);
+                    removeFromCart(id, variant_id);
                 } else {
                     saveCart();
                     renderCart();
@@ -120,11 +134,11 @@
                             <p class="cart-item-price">$${price.toFixed(2)}</p>
                             <div class="cart-item-controls">
                                 <div class="quantity-ctrl">
-                                    <button class="qty-btn minus" data-id="${item.id}">-</button>
+                                    <button class="qty-btn minus" data-id="${item.id}" data-variant="${item.variant_id || ''}">-</button>
                                     <span>${item.quantity}</span>
-                                    <button class="qty-btn plus" data-id="${item.id}">+</button>
+                                    <button class="qty-btn plus" data-id="${item.id}" data-variant="${item.variant_id || ''}">+</button>
                                 </div>
-                                <button class="remove-btn" data-id="${item.id}">Eliminar</button>
+                                <button class="remove-btn" data-id="${item.id}" data-variant="${item.variant_id || ''}">Eliminar</button>
                             </div>
                         </div>
                     </div>
@@ -137,70 +151,44 @@
             // Attach event listeners for dynamic buttons
             document.querySelectorAll('.qty-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const id = (e.target as HTMLButtonElement).dataset.id;
-                    const isPlus = (e.target as HTMLButtonElement).classList.contains('plus');
-                    if(id) changeQuantity(id, isPlus ? 1 : -1);
+                    const target = e.target as HTMLButtonElement;
+                    const id = target.dataset.id;
+                    const variant_id = target.dataset.variant || undefined;
+                    const isPlus = target.classList.contains('plus');
+                    if(id) changeQuantity(id, variant_id, isPlus ? 1 : -1);
                 });
             });
 
             document.querySelectorAll('.remove-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const id = (e.target as HTMLButtonElement).dataset.id;
-                    if(id) removeFromCart(id);
+                    const target = e.target as HTMLButtonElement;
+                    const id = target.dataset.id;
+                    const variant_id = target.dataset.variant || undefined;
+                    if(id) removeFromCart(id, variant_id);
                 });
             });
         }
 
         async function handleCheckout() {
             if (cart.length === 0) return;
-            
-            if(checkoutMsg) {
-                checkoutMsg.textContent = 'Procesando orden...';
-                checkoutMsg.style.color = 'white';
-            }
-            if(checkoutBtn) (checkoutBtn as HTMLButtonElement).disabled = true;
 
-            const API_BASE_URL = "http://localhost:3000"; // Assuming local backend
-            const payload = {
-                payment_method_id: "00000000-0000-0000-0000-000000000000", // Default dummy UUID
-                items: cart.map(item => ({
-                    product_id: item.id,
-                    quantity: item.quantity
-                })),
-                shipping_cost: 150.00,
-                notes: "Orden desde Frontend Ecommerce Angel"
-            };
-
-            try {
-                const res = await fetch(`${API_BASE_URL}/orders`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                const result = await res.json();
-                
-                if (res.ok && result.success) {
-                    if(checkoutMsg) {
-                        checkoutMsg.textContent = `¡Orden Creada! ID: ${result.data?.id || 'Exitosa'}`;
-                        checkoutMsg.style.color = '#4caf50';
-                    }
-                    cart = [];
-                    saveCart();
-                    renderCart();
-                    setTimeout(() => window.toggleCart(false), 3000);
-                } else {
-                    throw new Error(result.message || 'Error al procesar orden');
+            const subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0);
+            if (subtotal < 1000) {
+                if (checkoutMsg) {
+                    checkoutMsg.textContent = `El pedido mínimo es de $1,000.00 MXN. Te faltan $${(1000 - subtotal).toFixed(2)} MXN.`;
+                    checkoutMsg.style.color = "#ff4d4d";
                 }
-            } catch (err) {
-                console.error("Checkout Error:", err);
-                if(checkoutMsg) {
-                    checkoutMsg.textContent = err.message || 'Hubo un error al crear la orden. Intente de nuevo.';
-                    checkoutMsg.style.color = '#f44336';
-                }
-            } finally {
-                if(checkoutBtn) (checkoutBtn as HTMLButtonElement).disabled = false;
+                return;
             }
+
+            const user = localStorage.getItem('angel_user');
+            if (!user) {
+                window.location.href = '/login?redirect=checkout';
+                return;
+            }
+
+            // Redirige a la página de checkout genérica
+            window.location.href = '/checkout';
         }
 
         // Init listeners
@@ -221,7 +209,7 @@
     }
 </script>
 
-<style>
+<style is:global>
     .cart-overlay {
         position: fixed;
         top: 0;
@@ -244,16 +232,16 @@
         position: fixed;
         top: 0;
         right: -100%;
-        width: 100%;
-        max-width: 450px;
+        width: 33.33vw;
+        min-width: 350px;
+        max-width: 100vw;
         height: 100vh;
-        background: #111;
+        background: #000;
         z-index: 1001;
         display: flex;
         flex-direction: column;
-        transition: right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-        border-left: 1px solid rgba(255,255,255,0.1);
-        box-shadow: -5px 0 30px rgba(0,0,0,0.5);
+        transition: right 0.3s ease;
+        border-left: 1px solid #222;
     }
     .cart-drawer.open {
         right: 0;
@@ -263,13 +251,15 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 2rem;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding: 1.5rem;
+        border-bottom: 1px solid #222;
     }
     .cart-header h2 {
-        font-family: "Oswald", sans-serif;
-        font-size: 1.5rem;
+        font-family: "Inter", sans-serif;
+        font-size: 1.2rem;
+        font-weight: 600;
         margin: 0;
+        letter-spacing: 1px;
     }
     .close-btn {
         background: transparent;
@@ -287,7 +277,7 @@
     .cart-items {
         flex: 1;
         overflow-y: auto;
-        padding: 2rem;
+        padding: 1.5rem;
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
@@ -295,27 +285,30 @@
 
     .empty-cart {
         text-align: center;
-        opacity: 0.5;
+        opacity: 0.6;
         margin-top: 2rem;
+        font-size: 0.95rem;
     }
 
     .cart-item {
         display: flex;
-        gap: 1rem;
+        align-items: center;
+        gap: 1.5rem;
         padding-bottom: 1.5rem;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+        border-bottom: 1px solid #222;
     }
     .cart-item-img {
-        width: 80px;
-        height: 100px;
+        width: 90px;
+        height: 90px;
         object-fit: cover;
-        border-radius: 4px;
-        background: #222;
+        background: #111;
+        flex-shrink: 0;
     }
     .cart-item-info {
         flex: 1;
         display: flex;
         flex-direction: column;
+        justify-content: center;
     }
     .cart-item-brand {
         font-size: 0.75rem;
@@ -372,16 +365,15 @@
     .remove-btn:hover { opacity: 1; }
 
     .cart-footer {
-        padding: 2rem;
-        background: rgba(255,255,255,0.02);
-        border-top: 1px solid rgba(255,255,255,0.1);
+        padding: 1.5rem;
+        background: #050505;
+        border-top: 1px solid #222;
     }
     .cart-summary {
         display: flex;
         justify-content: space-between;
-        font-size: 1.2rem;
-        font-family: "Oswald", sans-serif;
-        font-weight: 700;
+        font-size: 1.1rem;
+        font-weight: 600;
         margin-bottom: 0.5rem;
     }
     .shipping-note {
@@ -391,20 +383,18 @@
     }
     .checkout-btn {
         width: 100%;
-        padding: 1rem;
+        padding: 0.8rem;
         background: #fff;
         color: #000;
         border: none;
-        font-family: "Oswald", sans-serif;
-        font-size: 1.1rem;
-        font-weight: 700;
+        font-family: "Inter", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
         cursor: pointer;
-        transition: background 0.3s, transform 0.3s;
-        border-radius: 4px;
+        text-align: center;
     }
     .checkout-btn:hover {
-        background: #f0f0f0;
-        transform: translateY(-2px);
+        background: #e0e0e0;
     }
     .checkout-btn:disabled {
         opacity: 0.5;
