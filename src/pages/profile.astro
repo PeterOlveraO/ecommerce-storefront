@@ -82,7 +82,7 @@ import Footer from "../components/Footer.astro";
                     return;
                 }
 
-                const API_BASE_URL = "http://localhost:3000";
+                const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
                 const form = document.getElementById("profile-form");
                 const btn = document.getElementById("save-btn");
                 const msg = document.getElementById("profile-msg");

@@ -39,7 +39,7 @@ import Footer from "../components/Footer.astro";
                     return;
                 }
 
-                const API_BASE_URL = "http://localhost:3000";
+                const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
                 const ordersList = document.getElementById("orders-list");
 
                 if (!ordersList) return;

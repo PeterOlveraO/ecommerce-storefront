@@ -139,7 +139,7 @@ try {
                         if (allProducts.length === 0 && !isFetching) {
                             isFetching = true;
                             try {
-                                const API_BASE_URL = "http://localhost:3000";
+                                const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
                                 const res = await fetch(`${API_BASE_URL}/products?limit=1000`);
                                 const json = await res.json();
                                 if (json.success) {

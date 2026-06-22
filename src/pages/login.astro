@@ -43,7 +43,7 @@ import Footer from "../components/Footer.astro";
                 const msg = document.getElementById('auth-message');
                 const btn = document.getElementById('submit-btn');
                 
-                const API_BASE_URL = "http://localhost:3000";
+                const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
 
                 form?.addEventListener('submit', async (e) => {
                     e.preventDefault();

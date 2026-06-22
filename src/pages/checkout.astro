@@ -179,7 +179,7 @@ import Footer from "../components/Footer.astro";
             return;
         }
 
-        const API_BASE_URL = "http://localhost:3000";
+        const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
         let cart = JSON.parse(localStorage.getItem("angel_cart") || "[]");
 
         if (cart.length === 0) {
