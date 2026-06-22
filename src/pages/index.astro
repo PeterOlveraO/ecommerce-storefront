@@ -94,7 +94,7 @@ try {
 
             for (let cat of activeCats) {
                 const catProdRes = await fetch(
-                    `${API_BASE_URL}/products?category_id=${cat.id}&limit=4`,
+                    `${API_BASE_URL}/products?category_id=${cat.id}&limit=50`,
                 );
                 if (catProdRes.ok) {
                     const cpResult = await catProdRes.json();
