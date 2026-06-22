@@ -99,13 +99,35 @@ try {
             </svg>
         </button>
 
-        <button class="hamburger" aria-label="Menu">
+        <button class="hamburger" aria-label="Menu" id="mobile-menu-btn">
             <span></span>
             <span></span>
             <span></span>
         </button>
     </div>
 </header>
+
+<!-- MOBILE SIDEBAR -->
+<div class="mobile-sidebar-overlay" id="mobile-overlay"></div>
+<div class="mobile-sidebar" id="mobile-sidebar">
+    <div class="sidebar-header">
+        <img src="/favicon.ico?v=2" alt="Vapezone" class="sidebar-logo" />
+        <button id="close-sidebar-btn" class="close-btn">&times;</button>
+    </div>
+    <div class="sidebar-links" id="sidebar-links">
+        <a href={shopCategoryUrl}>{shopCategoryName}</a>
+        <a href="/faq">FAQ</a>
+        <a href="/terms">Términos</a>
+        <a href="https://discord.gg/38QFybEmZs">Discord</a>
+        
+        <div class="sidebar-divider"></div>
+        
+        <div id="sidebar-auth-section" class="sidebar-auth-section">
+            <a href="/login">Iniciar sesión</a>
+            <a href="/register" class="sidebar-highlight">Registrarse</a>
+        </div>
+    </div>
+</div>
 
 <CartDrawer />
 
@@ -171,6 +193,49 @@ try {
             localStorage.removeItem("angel_token");
             window.location.reload();
         });
+
+        // Mobile Sidebar Logic
+        const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+        const closeSidebarBtn = document.getElementById("close-sidebar-btn");
+        const mobileSidebar = document.getElementById("mobile-sidebar");
+        const mobileOverlay = document.getElementById("mobile-overlay");
+        const sidebarAuthSection = document.getElementById("sidebar-auth-section");
+
+        function openSidebar() {
+            mobileSidebar?.classList.add("open");
+            mobileOverlay?.classList.add("open");
+            document.body.style.overflow = "hidden"; // Prevent scrolling
+        }
+
+        function closeSidebar() {
+            mobileSidebar?.classList.remove("open");
+            mobileOverlay?.classList.remove("open");
+            document.body.style.overflow = "";
+        }
+
+        mobileMenuBtn?.addEventListener("click", openSidebar);
+        closeSidebarBtn?.addEventListener("click", closeSidebar);
+        mobileOverlay?.addEventListener("click", closeSidebar);
+
+        if (userStr && sidebarAuthSection) {
+            try {
+                const user = JSON.parse(userStr);
+                const name = user.first_name || user.email;
+                sidebarAuthSection.innerHTML = `
+                    <div class="sidebar-user-info">Hola, ${name}</div>
+                    <a href="/profile">Mi Perfil</a>
+                    <a href="/orders">Mis Pedidos</a>
+                    <a href="#" id="sidebar-logout-btn" style="color: #f44336;">Cerrar Sesión</a>
+                `;
+                
+                document.getElementById("sidebar-logout-btn")?.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem("angel_user");
+                    localStorage.removeItem("angel_token");
+                    window.location.reload();
+                });
+            } catch (e) {}
+        }
 
         // Open cart if URL has openCart=true
         const urlParams = new URLSearchParams(window.location.search);
@@ -472,6 +537,7 @@ try {
 
         .hamburger {
             display: flex;
+            z-index: 50;
         }
 
         .nav-right .nav-link {
@@ -482,5 +548,109 @@ try {
             padding: 8px 16px;
             font-size: 0.85rem;
         }
+    }
+
+    /* MOBILE SIDEBAR STYLES */
+    .mobile-sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+
+    .mobile-sidebar-overlay.open {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .mobile-sidebar {
+        position: fixed;
+        top: 0;
+        right: -300px;
+        width: 280px;
+        height: 100vh;
+        background: #111;
+        border-left: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 1001;
+        transition: right 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .mobile-sidebar.open {
+        right: 0;
+    }
+
+    .sidebar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-logo {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        color: #fff;
+        font-size: 2rem;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .sidebar-links {
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .sidebar-links a {
+        color: #ccc;
+        text-decoration: none;
+        font-size: 1.1rem;
+        transition: color 0.3s ease;
+    }
+
+    .sidebar-links a:hover {
+        color: #fff;
+    }
+
+    .sidebar-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 10px 0;
+    }
+
+    .sidebar-auth-section {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .sidebar-auth-section .sidebar-highlight {
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .sidebar-user-info {
+        color: #fff;
+        font-family: "Oswald", sans-serif;
+        font-size: 1.2rem;
+        margin-bottom: 10px;
     }
 </style>
