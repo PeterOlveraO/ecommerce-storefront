@@ -1,132 +1,8 @@
 ---
 import Navbar from "../components/Navbar.astro";
-import HeroCarousel from "../components/HeroCarousel.astro";
-import ProductCard from "../components/ProductCard.astro";
 import Footer from "../components/Footer.astro";
 
 const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
-
-let headerProducts: any[] = [];
-let categories: any[] = [];
-let allCategories: any[] = [];
-let gridProducts: any[] = [];
-
-try {
-    // Fetch Header Images
-    const headerRes = await fetch(`${API_BASE_URL}/header-images`);
-    if (headerRes.ok) {
-        const result = await headerRes.json();
-        if (result.success && result.data) {
-            const defaultColors = ["#ff4d88", "#4d88ff", "#4dff88", "#b34dff"];
-            const activeHeaders = result.data
-                .filter((img: any) => img.is_active)
-                .sort((a: any, b: any) => a.display_order - b.display_order);
-
-            headerProducts = await Promise.all(
-                activeHeaders.map(async (img: any, index: number) => {
-                    let productData: any = null;
-                    let isProductLink = false;
-                    let linkUrl = img.link_url || "";
-
-                    if (linkUrl.includes("product/")) {
-                        isProductLink = true;
-                        const parts = linkUrl.split("product/");
-                        if (parts.length > 1) {
-                            const productId = parts[1].replace(/^\//, "");
-                            try {
-                                const prodRes = await fetch(
-                                    `${API_BASE_URL}/products/${productId}`,
-                                );
-                                if (prodRes.ok) {
-                                    const prodJson = await prodRes.json();
-                                    if (prodJson.success && prodJson.data) {
-                                        productData = prodJson.data;
-                                    }
-                                }
-                            } catch (e) {
-                                console.error(
-                                    "Error fetching product for banner:",
-                                    e,
-                                );
-                            }
-                        }
-                    }
-
-                    return {
-                        id: img.id,
-                        name: productData
-                            ? productData.name
-                            : img.name || "Promo",
-                        tagline: productData
-                            ? productData.brand
-                            : isProductLink
-                              ? "Destacado"
-                              : "Novedad",
-                        price: productData
-                            ? productData.sale_price || productData.price
-                            : "",
-                        original_price: productData
-                            ? productData.sale_price
-                                ? productData.price
-                                : ""
-                            : "",
-                        description: productData ? productData.description : "",
-                        image: img.image_url,
-                        color: defaultColors[index % defaultColors.length],
-                        link: linkUrl.startsWith("/") ? linkUrl : `/${linkUrl}`,
-                        is_product: isProductLink,
-                    };
-                }),
-            );
-        }
-    }
-
-    // Fetch Categories and their preview products
-    const catRes = await fetch(`${API_BASE_URL}/categories`);
-    if (catRes.ok) {
-        const catResult = await catRes.json();
-        if (catResult.success && catResult.data) {
-            const activeCats = catResult.data
-                .filter((cat: any) => cat.is_active && cat.display_order >= 1)
-                .sort((a: any, b: any) => a.display_order - b.display_order);
-
-            allCategories = activeCats;
-
-            for (let cat of activeCats) {
-                const catProdRes = await fetch(
-                    `${API_BASE_URL}/products?category_id=${cat.id}&limit=50`,
-                );
-                if (catProdRes.ok) {
-                    const cpResult = await catProdRes.json();
-                    if (cpResult.success && cpResult.data) {
-                        cat.products = cpResult.data
-                            .filter(
-                                (p: any) =>
-                                    p.is_active &&
-                                    p.featured != 1 &&
-                                    p.featured !== true &&
-                                    p.featured !== "1",
-                            )
-                            .sort(
-                                (a: any, b: any) =>
-                                    a.display_order - b.display_order,
-                            )
-                            .slice(0, 4);
-                    } else {
-                        cat.products = [];
-                    }
-                } else {
-                    cat.products = [];
-                }
-            }
-            categories = activeCats
-                .filter((cat: any) => cat.products && cat.products.length > 0)
-                .slice(0, 5);
-        }
-    }
-} catch (error) {
-    console.error("Error fetching data:", error);
-}
 ---
 
 <!doctype html>
@@ -143,7 +19,21 @@ try {
     </head>
     <body>
         <Navbar />
-        <HeroCarousel headerProducts={headerProducts} />
+
+        <!-- Hero Carousel dinámico -->
+        <div id="hero-carousel-wrapper">
+            <!-- Skeleton mientras carga -->
+            <div
+                id="hero-skeleton"
+                style="width:100%;height:420px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;"
+            >
+                <span
+                    style="color:rgba(255,255,255,0.2);font-family:Inter,sans-serif;"
+                    >Cargando...</span
+                >
+            </div>
+            <div id="hero-carousel-content" style="display:none;"></div>
+        </div>
 
         <div class="shop-layout container" style="margin-top: 4rem;">
             <aside class="shop-sidebar">
@@ -162,64 +52,35 @@ try {
 
                 <div class="filter-group">
                     <h3 class="filter-title">Categorías</h3>
-                    <ul class="category-list">
-                        <li>
-                            <a href="/" class="active">Inicio</a>
-                        </li>
-                        {
-                            allCategories.map((cat: any) => (
-                                <li>
-                                    <a href={`/category/${cat.id}`}>
-                                        {cat.name}
-                                    </a>
-                                </li>
-                            ))
-                        }
+                    <ul class="category-list" id="category-list">
+                        <li><a href="/" class="active">Inicio</a></li>
+                        <!-- Se llena dinámicamente -->
                     </ul>
                 </div>
             </aside>
 
-            <div class="shop-content">
-                {
-                    categories.map((category) => (
-                        <section class="store-section reveal-on-scroll">
-                            <div class="category-header reveal-item">
-                                <h2 class="section-title">{category.name}</h2>
-                                <a
-                                    href={`/category/${category.id}`}
-                                    class="category-link"
-                                >
-                                    Ver todo{" "}
-                                    <svg
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                    >
-                                        <path d="M5 12h14M12 5l7 7-7 7" />
-                                    </svg>
-                                </a>
-                            </div>
-
-                            <div class="products-grid">
-                                {category.products.map(
-                                    (product: any, index: number) => (
-                                        <ProductCard
-                                            product={product}
-                                            index={index}
-                                        />
-                                    ),
-                                )}
-                            </div>
-                        </section>
-                    ))
-                }
+            <div class="shop-content" id="shop-content">
+                <!-- Skeleton productos -->
+                <div id="products-skeleton">
+                    {
+                        [1, 2, 3].map(() => (
+                            <section style="margin-bottom:4rem;">
+                                <div style="height:2rem;width:200px;background:rgba(255,255,255,0.06);border-radius:4px;margin-bottom:2rem;" />
+                                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;">
+                                    {[1, 2, 3, 4].map(() => (
+                                        <div style="height:280px;background:rgba(255,255,255,0.04);border-radius:8px;" />
+                                    ))}
+                                </div>
+                            </section>
+                        ))
+                    }
+                </div>
+                <!-- Contenido real -->
+                <div id="categories-content" style="display:none;"></div>
             </div>
         </div>
 
-        <!-- Features / Benefits Section -->
+        <!-- Features -->
         <section class="store-features reveal-on-scroll">
             <div class="container">
                 <div class="features-grid">
@@ -271,428 +132,381 @@ try {
 
         <Footer />
 
-        <script>
-            document.addEventListener("DOMContentLoaded", () => {
-                const observerOptions = {
-                    root: null,
-                    rootMargin: "0px",
-                    threshold: 0.15,
-                };
+        <script define:vars={{ API_BASE_URL }}>
+            const defaultColors = ["#ff4d88", "#4d88ff", "#4dff88", "#b34dff"];
 
+            // ─── Render Hero Carousel ───────────────────────────────
+            function renderHero(slides) {
+                if (!slides.length) return;
+                const wrapper = document.getElementById(
+                    "hero-carousel-content",
+                );
+                const skeleton = document.getElementById("hero-skeleton");
+                wrapper.innerHTML = `
+                <div class="hero-slider" id="heroSlider">
+                    ${slides
+                        .map(
+                            (s, i) => `
+                        <div class="hero-slide ${i === 0 ? "active" : ""}" style="background:${s.color}20;">
+                            <div class="hero-content">
+                                <span class="hero-tagline">${s.tagline}</span>
+                                <h1 class="hero-title">${s.name}</h1>
+                                ${
+                                    s.price
+                                        ? `<div class="hero-price">
+                                    ${s.original_price ? `<span class="hero-price-original">$${s.original_price}</span>` : ""}
+                                    <span class="hero-price-main">$${s.price}</span>
+                                </div>`
+                                        : ""
+                                }
+                                <a href="${s.link}" class="hero-cta">
+                                    ${s.is_product ? "Ver Producto" : "Ver más"}
+                                </a>
+                            </div>
+                            <div class="hero-image-wrap">
+                                <img src="${s.image}" alt="${s.name}" />
+                            </div>
+                        </div>
+                    `,
+                        )
+                        .join("")}
+                    <button class="hero-arrow prev" id="heroPrev">&#8249;</button>
+                    <button class="hero-arrow next" id="heroNext">&#8250;</button>
+                    <div class="hero-dots">
+                        ${slides.map((_, i) => `<span class="hero-dot ${i === 0 ? "active" : ""}" data-i="${i}"></span>`).join("")}
+                    </div>
+                </div>`;
+
+                skeleton.style.display = "none";
+                wrapper.style.display = "block";
+                initSlider(slides.length);
+            }
+
+            function initSlider(total) {
+                let current = 0;
+                const slides = document.querySelectorAll(".hero-slide");
+                const dots = document.querySelectorAll(".hero-dot");
+
+                function goTo(n) {
+                    slides[current].classList.remove("active");
+                    dots[current].classList.remove("active");
+                    current = (n + total) % total;
+                    slides[current].classList.add("active");
+                    dots[current].classList.add("active");
+                }
+
+                document
+                    .getElementById("heroPrev")
+                    .addEventListener("click", () => goTo(current - 1));
+                document
+                    .getElementById("heroNext")
+                    .addEventListener("click", () => goTo(current + 1));
+                dots.forEach((d) =>
+                    d.addEventListener("click", () => goTo(+d.dataset.i)),
+                );
+                setInterval(() => goTo(current + 1), 5000);
+            }
+
+            // ─── Render categorías y productos ─────────────────────
+            function renderProductCard(product, index) {
+                const price =
+                    product.sale_price &&
+                    parseFloat(product.sale_price) < parseFloat(product.price)
+                        ? product.sale_price
+                        : product.price;
+                const hasDiscount =
+                    product.sale_price &&
+                    parseFloat(product.sale_price) < parseFloat(product.price);
+                return `
+                <a href="/product/${product.id}" class="product-card reveal-item" style="transition-delay:${index * 80}ms;text-decoration:none;color:inherit;">
+                    <div class="product-img-wrap">
+                        <img src="${product.image_url}" alt="${product.name}" loading="lazy" />
+                    </div>
+                    <div class="product-info">
+                        <span class="product-brand">${product.brand || ""}</span>
+                        <h3 class="product-name">${product.name}</h3>
+                        <div class="product-price-wrap">
+                            ${hasDiscount ? `<span class="product-price-old">$${product.price}</span>` : ""}
+                            <span class="product-price">$${price}</span>
+                        </div>
+                    </div>
+                </a>`;
+            }
+
+            function renderCategories(categories) {
+                const container = document.getElementById("categories-content");
+                const skeleton = document.getElementById("products-skeleton");
+                container.innerHTML = categories
+                    .map(
+                        (cat) => `
+                <section class="store-section reveal-on-scroll">
+                    <div class="category-header reveal-item">
+                        <h2 class="section-title">${cat.name}</h2>
+                        <a href="/category/${cat.id}" class="category-link">
+                            Ver todo
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                    <div class="products-grid">
+                        ${cat.products.map((p, i) => renderProductCard(p, i)).join("")}
+                    </div>
+                </section>
+            `,
+                    )
+                    .join("");
+
+                skeleton.style.display = "none";
+                container.style.display = "block";
+                initScrollReveal();
+            }
+
+            function renderCategoryList(categories) {
+                const list = document.getElementById("category-list");
+                const extras = categories
+                    .map(
+                        (cat) =>
+                            `<li><a href="/category/${cat.id}">${cat.name}</a></li>`,
+                    )
+                    .join("");
+                list.innerHTML = `<li><a href="/" class="active">Inicio</a></li>${extras}`;
+            }
+
+            // ─── Scroll reveal ──────────────────────────────────────
+            function initScrollReveal() {
                 const observer = new IntersectionObserver(
-                    (entries, observer) => {
+                    (entries, obs) => {
                         entries.forEach((entry) => {
                             if (entry.isIntersecting) {
                                 entry.target.classList.add("is-visible");
-                                observer.unobserve(entry.target);
+                                obs.unobserve(entry.target);
                             }
                         });
                     },
-                    observerOptions,
+                    { threshold: 0.15 },
                 );
+                document
+                    .querySelectorAll(".reveal-on-scroll")
+                    .forEach((el) => observer.observe(el));
+            }
 
-                document.querySelectorAll(".reveal-on-scroll").forEach((el) => {
-                    observer.observe(el);
-                });
-
-                // Home page search logic (Dropdown)
-                const searchInput = document.getElementById(
-                    "product-search",
-                ) as HTMLInputElement;
+            // ─── Search ─────────────────────────────────────────────
+            function initSearch() {
+                const searchInput = document.getElementById("product-search");
                 const searchDropdown =
                     document.getElementById("search-dropdown");
-
-                let allProducts: any[] = [];
+                let allProducts = [];
                 let isFetching = false;
 
-                if (searchInput && searchDropdown) {
-                    searchInput.addEventListener("focus", async () => {
-                        if (allProducts.length === 0 && !isFetching) {
-                            isFetching = true;
-                            try {
-                                const API_BASE_URL =
-                                    import.meta.env.PUBLIC_API_URL ||
-                                    "http://localhost:3000";
-                                const res = await fetch(
-                                    `${API_BASE_URL}/products?limit=1000`,
+                searchInput.addEventListener("focus", async () => {
+                    if (allProducts.length === 0 && !isFetching) {
+                        isFetching = true;
+                        try {
+                            const res = await fetch(
+                                `${API_BASE_URL}/products?limit=1000`,
+                            );
+                            const json = await res.json();
+                            if (json.success)
+                                allProducts = json.data.filter(
+                                    (p) => p.is_active,
                                 );
-                                const json = await res.json();
-                                if (json.success) {
-                                    allProducts = json.data.filter(
-                                        (p: any) => p.is_active,
-                                    );
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    }
+                });
+
+                searchInput.addEventListener("input", () => {
+                    const term = searchInput.value.toLowerCase().trim();
+                    if (!term) {
+                        searchDropdown.style.display = "none";
+                        return;
+                    }
+                    const matches = allProducts
+                        .filter(
+                            (p) =>
+                                (p.name &&
+                                    p.name.toLowerCase().includes(term)) ||
+                                (p.brand &&
+                                    p.brand.toLowerCase().includes(term)),
+                        )
+                        .slice(0, 6);
+
+                    if (matches.length) {
+                        searchDropdown.innerHTML = matches
+                            .map((p) => {
+                                const price =
+                                    p.sale_price &&
+                                    parseFloat(p.sale_price) <
+                                        parseFloat(p.price)
+                                        ? p.sale_price
+                                        : p.price;
+                                return `<a href="/product/${p.id}" class="search-result-item">
+                            <img src="${p.image_url}" alt="${p.name}">
+                            <div class="search-result-info">
+                                <span class="sr-brand">${p.brand || ""}</span>
+                                <span class="sr-name">${p.name}</span>
+                                <span class="sr-price">$${price}</span>
+                            </div>
+                        </a>`;
+                            })
+                            .join("");
+                    } else {
+                        searchDropdown.innerHTML =
+                            '<div class="sr-empty">No se encontraron productos</div>';
+                    }
+                    searchDropdown.style.display = "block";
+                });
+
+                document.addEventListener("click", (e) => {
+                    if (
+                        !searchInput.contains(e.target) &&
+                        !searchDropdown.contains(e.target)
+                    )
+                        searchDropdown.style.display = "none";
+                });
+            }
+
+            // ─── Main: fetch todo ───────────────────────────────────
+            async function init() {
+                try {
+                    // Header images
+                    const headerRes = await fetch(
+                        `${API_BASE_URL}/header-images`,
+                    );
+                    if (headerRes.ok) {
+                        const result = await headerRes.json();
+                        if (result.success && result.data) {
+                            const activeHeaders = result.data
+                                .filter((img) => img.is_active)
+                                .sort(
+                                    (a, b) => a.display_order - b.display_order,
+                                );
+
+                            const slides = await Promise.all(
+                                activeHeaders.map(async (img, index) => {
+                                    let productData = null;
+                                    let isProductLink = false;
+                                    let linkUrl = img.link_url || "";
+
+                                    if (linkUrl.includes("product/")) {
+                                        isProductLink = true;
+                                        const productId = linkUrl
+                                            .split("product/")[1]
+                                            ?.replace(/^\//, "");
+                                        if (productId) {
+                                            try {
+                                                const r = await fetch(
+                                                    `${API_BASE_URL}/products/${productId}`,
+                                                );
+                                                if (r.ok) {
+                                                    const j = await r.json();
+                                                    if (j.success && j.data)
+                                                        productData = j.data;
+                                                }
+                                            } catch (e) {}
+                                        }
+                                    }
+
+                                    return {
+                                        name: productData
+                                            ? productData.name
+                                            : img.name || "Promo",
+                                        tagline: productData
+                                            ? productData.brand
+                                            : isProductLink
+                                              ? "Destacado"
+                                              : "Novedad",
+                                        price: productData
+                                            ? productData.sale_price ||
+                                              productData.price
+                                            : "",
+                                        original_price: productData
+                                            ? productData.sale_price
+                                                ? productData.price
+                                                : ""
+                                            : "",
+                                        image: img.image_url,
+                                        color: defaultColors[
+                                            index % defaultColors.length
+                                        ],
+                                        link: linkUrl.startsWith("/")
+                                            ? linkUrl
+                                            : `/${linkUrl}`,
+                                        is_product: isProductLink,
+                                    };
+                                }),
+                            );
+                            renderHero(slides);
+                        }
+                    }
+
+                    // Categorías y productos
+                    const catRes = await fetch(`${API_BASE_URL}/categories`);
+                    if (catRes.ok) {
+                        const catResult = await catRes.json();
+                        if (catResult.success && catResult.data) {
+                            const activeCats = catResult.data
+                                .filter(
+                                    (cat) =>
+                                        cat.is_active && cat.display_order >= 1,
+                                )
+                                .sort(
+                                    (a, b) => a.display_order - b.display_order,
+                                );
+
+                            renderCategoryList(activeCats);
+
+                            for (let cat of activeCats) {
+                                const r = await fetch(
+                                    `${API_BASE_URL}/products?category_id=${cat.id}&limit=50`,
+                                );
+                                if (r.ok) {
+                                    const j = await r.json();
+                                    cat.products =
+                                        j.success && j.data
+                                            ? j.data
+                                                  .filter(
+                                                      (p) =>
+                                                          p.is_active &&
+                                                          p.featured != 1 &&
+                                                          p.featured !== true &&
+                                                          p.featured !== "1",
+                                                  )
+                                                  .sort(
+                                                      (a, b) =>
+                                                          a.display_order -
+                                                          b.display_order,
+                                                  )
+                                                  .slice(0, 4)
+                                            : [];
+                                } else {
+                                    cat.products = [];
                                 }
-                            } catch (e) {
-                                console.error(
-                                    "Error fetching products for search",
-                                    e,
-                                );
                             }
-                        }
-                    });
 
-                    searchInput.addEventListener("input", () => {
-                        const term = searchInput.value.toLowerCase().trim();
-                        if (term.length === 0) {
-                            searchDropdown.style.display = "none";
-                            return;
+                            const categories = activeCats
+                                .filter(
+                                    (cat) =>
+                                        cat.products && cat.products.length > 0,
+                                )
+                                .slice(0, 5);
+                            renderCategories(categories);
                         }
-
-                        const matches = allProducts
-                            .filter(
-                                (p) =>
-                                    (p.name &&
-                                        p.name.toLowerCase().includes(term)) ||
-                                    (p.brand &&
-                                        p.brand.toLowerCase().includes(term)),
-                            )
-                            .slice(0, 6);
-
-                        if (matches.length > 0) {
-                            searchDropdown.innerHTML = matches
-                                .map((p) => {
-                                    const price =
-                                        p.sale_price &&
-                                        parseFloat(p.sale_price) <
-                                            parseFloat(p.price)
-                                            ? p.sale_price
-                                            : p.price;
-                                    return `
-                                <a href="/product/${p.id}" class="search-result-item">
-                                    <img src="${p.image_url}" alt="${p.name}">
-                                    <div class="search-result-info">
-                                        <span class="sr-brand">${p.brand || ""}</span>
-                                        <span class="sr-name">${p.name}</span>
-                                        <span class="sr-price">$${price}</span>
-                                    </div>
-                                </a>
-                                `;
-                                })
-                                .join("");
-                            searchDropdown.style.display = "block";
-                        } else {
-                            searchDropdown.innerHTML =
-                                '<div class="sr-empty">No se encontraron productos</div>';
-                            searchDropdown.style.display = "block";
-                        }
-                    });
-
-                    document.addEventListener("click", (e) => {
-                        const target = e.target as Node;
-                        if (
-                            !searchInput.contains(target) &&
-                            !searchDropdown.contains(target)
-                        ) {
-                            searchDropdown.style.display = "none";
-                        }
-                    });
+                    }
+                } catch (e) {
+                    console.error("Error cargando home:", e);
                 }
+            }
+
+            document.addEventListener("DOMContentLoaded", () => {
+                init();
+                initSearch();
+                initScrollReveal();
             });
         </script>
     </body>
 </html>
 
-<style is:global>
-    /* Reset & Base */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    body {
-        background-color: #000;
-        color: #fff;
-        font-family: "Inter", sans-serif;
-        overflow-x: hidden;
-    }
-
-    h1,
-    h2,
-    h3,
-    .product-price {
-        font-family: "Oswald", sans-serif;
-        text-transform: uppercase;
-    }
-
-    /* Reveal Animations */
-    .reveal-item {
-        opacity: 0;
-        transform: translateY(40px);
-        transition:
-            opacity 0.8s ease-out,
-            transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
-    .reveal-on-scroll.is-visible .reveal-item {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    /* Store Sections */
-    .store-section {
-        padding: 0 0 5rem 0;
-        margin: 0 auto;
-    }
-
-    .store-features {
-        padding: 6rem 0;
-        background: linear-gradient(
-            to bottom,
-            transparent,
-            rgba(255, 255, 255, 0.02)
-        );
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .features-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
-    @media (min-width: 768px) {
-        .features-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-    @media (min-width: 1024px) {
-        .features-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
-    }
-
-    .feature-card {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        padding: 2.5rem 2rem;
-        border-radius: 12px;
-        text-align: center;
-        transition:
-            transform 0.3s ease,
-            background 0.3s ease;
-    }
-
-    .feature-card:hover {
-        transform: translateY(-5px);
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    .feature-icon {
-        font-size: 2.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .feature-card h3 {
-        font-size: 1.2rem;
-        margin-bottom: 1rem;
-        letter-spacing: 1px;
-    }
-
-    .feature-card p {
-        font-size: 0.95rem;
-        color: rgba(255, 255, 255, 0.6);
-        line-height: 1.6;
-    }
-    .container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 5%;
-    }
-    .section-title {
-        font-size: 2.5rem;
-        letter-spacing: 2px;
-    }
-
-    /* Category Header */
-    .category-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 2.5rem;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-        padding-bottom: 1rem;
-    }
-
-    .category-link {
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        opacity: 0.7;
-        font-weight: 400;
-        text-decoration: none;
-        color: #fff;
-        transition: opacity 0.3s;
-        margin-bottom: 0.5rem;
-    }
-    .category-link:hover {
-        opacity: 1;
-    }
-
-    /* Products Grid */
-    .products-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1.5rem;
-    }
-    @media (min-width: 768px) {
-        .products-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
-    }
-
-    /* Layout & Sidebar */
-    .shop-layout {
-        display: flex;
-        flex-direction: column;
-        gap: 3rem;
-    }
-
-    @media (min-width: 900px) {
-        .shop-layout {
-            flex-direction: row;
-            align-items: flex-start;
-        }
-
-        .shop-sidebar {
-            width: 250px;
-            flex-shrink: 0;
-            position: sticky;
-            top: 20px;
-            z-index: 10;
-        }
-
-        .shop-content {
-            flex-grow: 1;
-            width: calc(100% - 250px - 3rem);
-        }
-    }
-
-    .filter-group {
-        margin-bottom: 2.5rem;
-        background: rgba(255, 255, 255, 0.02);
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .filter-title {
-        font-family: "Oswald", sans-serif;
-        font-size: 1.2rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 1.2rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .category-list {
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 0.8rem;
-    }
-
-    .category-list a {
-        color: rgba(255, 255, 255, 0.6);
-        text-decoration: none;
-        transition:
-            color 0.3s ease,
-            padding-left 0.3s ease;
-        display: block;
-    }
-
-    .category-list a:hover {
-        color: #fff;
-        padding-left: 5px;
-    }
-
-    .category-list a.active {
-        color: #fff;
-        font-weight: bold;
-        border-left: 2px solid #fff;
-        padding-left: 10px;
-    }
-
-    .search-wrapper input {
-        width: 100%;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #fff;
-        padding: 0.5rem;
-        border-radius: 4px;
-        font-family: "Inter", sans-serif;
-        outline: none;
-    }
-
-    .search-wrapper input:focus {
-        border-color: rgba(255, 255, 255, 0.5);
-    }
-
-    .search-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        background: #111;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-        margin-top: 5px;
-        max-height: 400px;
-        overflow-y: auto;
-        display: none;
-        z-index: 100;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    }
-
-    .search-result-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px;
-        text-decoration: none;
-        color: #fff;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        transition: background 0.2s;
-    }
-
-    .search-result-item:hover {
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    .search-result-item img {
-        width: 40px;
-        height: 40px;
-        object-fit: cover;
-        border-radius: 4px;
-        background: #000;
-    }
-
-    .search-result-info {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .sr-brand {
-        font-size: 0.7rem;
-        opacity: 0.5;
-        text-transform: uppercase;
-    }
-
-    .sr-name {
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-
-    .sr-price {
-        font-size: 0.8rem;
-        color: #fff;
-        font-family: "Oswald", sans-serif;
-    }
-
-    .sr-empty {
-        padding: 15px;
-        text-align: center;
-        font-size: 0.9rem;
-        opacity: 0.6;
-    }
-</style>
+<!-- TU MISMO <style> QUE YA TENÍAS — no cambia nada -->

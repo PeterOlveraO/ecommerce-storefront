@@ -2,57 +2,7 @@
 import Navbar from "../../components/Navbar.astro";
 import Footer from "../../components/Footer.astro";
 
-export async function getStaticPaths() {
-    const API_BASE_URL =
-        import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
-    try {
-        const res = await fetch(`${API_BASE_URL}/products?limit=1000`);
-        if (!res.ok) return [];
-        const result = await res.json();
-        if (!result.success || !result.data) return [];
-
-        return result.data.map((product: any) => ({
-            params: { id: product.id },
-            props: { product },
-        }));
-    } catch (e) {
-        console.error("Error fetching products for paths", e);
-        return [];
-    }
-}
-
-const { product: basicProduct } = Astro.props;
-
-// Fetch full product details including variants
-let fullProduct = basicProduct;
-try {
-    const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
-    const res = await fetch(`${API_BASE_URL}/products/${basicProduct.id}`);
-    if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data) {
-            fullProduct = json.data;
-        }
-    }
-} catch (e) {
-    console.error("Error fetching full product details", e);
-}
-
-const product = fullProduct;
-
-let productDetails = null;
-if (product.details) {
-    try {
-        productDetails =
-            typeof product.details === "string"
-                ? JSON.parse(product.details)
-                : product.details;
-    } catch (e) {
-        console.error("Could not parse product details", e);
-    }
-}
-
-const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
 ---
 
 <!doctype html>
@@ -60,7 +10,7 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{product.name} | Ecommerce Angel</title>
+        <title>Producto | Vapezone</title>
         <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2" />
         <link
             href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
@@ -70,187 +20,365 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
     <body>
         <Navbar solid={true} />
 
-        <main class="product-page">
+        <!-- Skeleton mientras carga -->
+        <main class="product-page" id="product-skeleton">
+            <div class="product-container">
+                <div class="skeleton-img"></div>
+                <div class="skeleton-info">
+                    <div class="skeleton-line short"></div>
+                    <div class="skeleton-line long"></div>
+                    <div class="skeleton-line medium"></div>
+                    <div class="skeleton-line medium"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Contenido real (oculto hasta que cargue) -->
+        <main class="product-page" id="product-content" style="display:none;">
             <div class="product-container">
                 <div class="product-image-col reveal-item">
                     <div class="image-wrapper">
-                        {
-                            product.sale_price &&
-                                parseFloat(product.sale_price) <
-                                    parseFloat(product.price) && (
-                                    <span class="sale-badge">Oferta</span>
-                                )
-                        }
-                        <img src={product.image_url} alt={product.name} />
+                        <span
+                            id="sale-badge"
+                            class="sale-badge"
+                            style="display:none;">Oferta</span
+                        >
+                        <img id="product-img" src="" alt="" />
                     </div>
                 </div>
 
                 <div class="product-info-col reveal-item">
-                    <p class="brand">{product.brand}</p>
-                    <h1 class="title">{product.name}</h1>
+                    <p class="brand" id="product-brand"></p>
+                    <h1 class="title" id="product-title"></h1>
 
                     <div class="price-container">
-                        {
-                            product.sale_price &&
-                            parseFloat(product.sale_price) <
-                                parseFloat(product.price) ? (
-                                <>
-                                    <span class="current-price">
-                                        ${product.sale_price}
-                                    </span>
-                                    <span class="original-price">
-                                        ${product.price}
-                                    </span>
-                                </>
-                            ) : (
-                                <span class="current-price">
-                                    ${product.price}
-                                </span>
-                            )
-                        }
+                        <span class="current-price" id="current-price"></span>
+                        <span
+                            class="original-price"
+                            id="original-price"
+                            style="display:none;"></span>
                     </div>
 
                     <div class="description">
-                        <p>{product.description}</p>
+                        <p id="product-description"></p>
                     </div>
 
-                    {
-                        activeVariants.length > 0 && (
-                            <div class="product-variants">
-                                <h3 class="variants-title">Selecciona una opción:</h3>
-                                <div class="variants-grid" id="variants-container">
-                                    {activeVariants.map((variant: any) => {
-                                        const isOutOfStock = variant.stock === 0;
-                                        return (
-                                            <button 
-                                                class={`variant-btn ${isOutOfStock ? 'disabled' : ''}`}
-                                                data-id={variant.id}
-                                                data-name={variant.variante1 + (variant.variante2 ? ` - ${variant.variante2}` : '')}
-                                                data-stock={variant.stock}
-                                                disabled={isOutOfStock}
-                                            >
-                                                {variant.variante1}
-                                                {variant.variante2 && ` - ${variant.variante2}`}
-                                                {isOutOfStock && ' (Agotado)'}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <p id="variant-error" class="variant-error" style="display: none; color: #ff4d4d; margin-top: 10px;">Por favor, selecciona una opción antes de añadir al carrito.</p>
-                            </div>
-                        )
-                    }
-
-                    {
-                        productDetails &&
-                            Object.keys(productDetails).length > 0 && (
-                                <div class="product-details">
-                                    <h3 class="details-title">
-                                        Especificaciones
-                                    </h3>
-                                    <ul class="details-list">
-                                        {Object.entries(productDetails).map(
-                                            ([key, value]) => (
-                                                <li>
-                                                    <span class="detail-key">
-                                                        {key}:
-                                                    </span>
-                                                    <span class="detail-value">
-                                                        {value}
-                                                    </span>
-                                                </li>
-                                            ),
-                                        )}
-                                    </ul>
-                                </div>
-                            )
-                    }
-
-                    <button 
-                        id="add-to-cart-btn" 
-                        class="add-to-cart-btn"
-                        data-product={JSON.stringify({
-                            id: product.id,
-                            name: product.name,
-                            brand: product.brand,
-                            price: product.sale_price && parseFloat(product.sale_price) < parseFloat(product.price) ? product.sale_price : product.price,
-                            image_url: product.image_url,
-                            stock: product.stock
-                        })}
+                    <div
+                        class="product-variants"
+                        id="variants-section"
+                        style="display:none;"
                     >
+                        <h3 class="variants-title">Selecciona una opción:</h3>
+                        <div class="variants-grid" id="variants-container">
+                        </div>
+                        <p
+                            id="variant-error"
+                            class="variant-error"
+                            style="display:none;color:#ff4d4d;margin-top:10px;"
+                        >
+                            Por favor, selecciona una opción antes de añadir al
+                            carrito.
+                        </p>
+                    </div>
+
+                    <div
+                        class="product-details"
+                        id="details-section"
+                        style="display:none;"
+                    >
+                        <h3 class="details-title">Especificaciones</h3>
+                        <ul class="details-list" id="details-list"></ul>
+                    </div>
+
+                    <button id="add-to-cart-btn" class="add-to-cart-btn">
                         AÑADIR AL CARRITO
                     </button>
                 </div>
             </div>
         </main>
 
+        <!-- Página 404 si no existe el producto -->
+        <main class="product-page" id="product-not-found" style="display:none;">
+            <div style="text-align:center;padding:6rem 2rem;">
+                <h2
+                    style="font-family:'Oswald',sans-serif;font-size:3rem;margin-bottom:1rem;"
+                >
+                    PRODUCTO NO ENCONTRADO
+                </h2>
+                <p style="opacity:0.6;margin-bottom:2rem;">
+                    Este producto no existe o fue eliminado.
+                </p>
+                <a href="/" style="color:#fff;text-decoration:underline;"
+                    >Volver al inicio</a
+                >
+            </div>
+        </main>
+
         <Footer />
 
-        <script>
-            // Simple reveal animation for product page
-            document.addEventListener("DOMContentLoaded", () => {
+        <script define:vars={{ API_BASE_URL }}>
+            document.addEventListener("DOMContentLoaded", async () => {
+                // Obtener el id desde la URL: /product/123
+                const pathParts = window.location.pathname.split("/");
+                const productId = pathParts[pathParts.length - 1];
+
+                if (!productId) {
+                    showNotFound();
+                    return;
+                }
+
+                try {
+                    const res = await fetch(
+                        `${API_BASE_URL}/products/${productId}`,
+                    );
+                    if (!res.ok) {
+                        showNotFound();
+                        return;
+                    }
+
+                    const json = await res.json();
+                    if (!json.success || !json.data) {
+                        showNotFound();
+                        return;
+                    }
+
+                    renderProduct(json.data);
+                } catch (e) {
+                    console.error("Error cargando producto:", e);
+                    showNotFound();
+                }
+            });
+
+            function showNotFound() {
+                document.getElementById("product-skeleton").style.display =
+                    "none";
+                document.getElementById("product-not-found").style.display =
+                    "flex";
+            }
+
+            function renderProduct(product) {
+                // Actualizar <title>
+                document.title = `${product.name} | Vapezone`;
+
+                // Imagen y badge
+                const img = document.getElementById("product-img");
+                img.src = product.image_url;
+                img.alt = product.name;
+
+                const hasSale =
+                    product.sale_price &&
+                    parseFloat(product.sale_price) < parseFloat(product.price);
+                if (hasSale)
+                    document.getElementById("sale-badge").style.display =
+                        "block";
+
+                // Textos básicos
+                document.getElementById("product-brand").textContent =
+                    product.brand || "";
+                document.getElementById("product-title").textContent =
+                    product.name;
+                document.getElementById("product-description").textContent =
+                    product.description || "";
+
+                // Precios
+                const finalPrice = hasSale ? product.sale_price : product.price;
+                document.getElementById("current-price").textContent =
+                    `$${finalPrice}`;
+                if (hasSale) {
+                    const origEl = document.getElementById("original-price");
+                    origEl.textContent = `$${product.price}`;
+                    origEl.style.display = "inline";
+                }
+
+                // Variantes
+                const activeVariants = (product.variants || []).filter(
+                    (v) => v.is_active,
+                );
+                if (activeVariants.length > 0) {
+                    const variantsSection =
+                        document.getElementById("variants-section");
+                    const variantsContainer =
+                        document.getElementById("variants-container");
+                    variantsSection.style.display = "block";
+                    variantsContainer.innerHTML = activeVariants
+                        .map((variant) => {
+                            const isOut = variant.stock === 0;
+                            const label =
+                                variant.variante1 +
+                                (variant.variante2
+                                    ? ` - ${variant.variante2}`
+                                    : "");
+                            return `<button
+                        class="variant-btn${isOut ? " disabled" : ""}"
+                        data-id="${variant.id}"
+                        data-name="${label}"
+                        data-stock="${variant.stock}"
+                        ${isOut ? "disabled" : ""}>
+                        ${label}${isOut ? " (Agotado)" : ""}
+                    </button>`;
+                        })
+                        .join("");
+                }
+
+                // Detalles / Especificaciones
+                let productDetails = null;
+                if (product.details) {
+                    try {
+                        productDetails =
+                            typeof product.details === "string"
+                                ? JSON.parse(product.details)
+                                : product.details;
+                    } catch (e) {}
+                }
+                if (productDetails && Object.keys(productDetails).length > 0) {
+                    document.getElementById("details-section").style.display =
+                        "block";
+                    document.getElementById("details-list").innerHTML =
+                        Object.entries(productDetails)
+                            .map(
+                                ([k, v]) => `<li>
+                        <span class="detail-key">${k}:</span>
+                        <span class="detail-value">${v}</span>
+                    </li>`,
+                            )
+                            .join("");
+                }
+
+                // Guardar datos del producto en el botón
+                document.getElementById("add-to-cart-btn").dataset.product =
+                    JSON.stringify({
+                        id: product.id,
+                        name: product.name,
+                        brand: product.brand,
+                        price: finalPrice,
+                        image_url: product.image_url,
+                        stock: product.stock,
+                    });
+
+                // Mostrar contenido, ocultar skeleton
+                document.getElementById("product-skeleton").style.display =
+                    "none";
+                document.getElementById("product-content").style.display =
+                    "flex";
+
+                // Animación reveal
                 setTimeout(() => {
                     document
                         .querySelectorAll(".reveal-item")
-                        .forEach((el, index) => {
-                            setTimeout(() => {
-                                el.classList.add("is-visible");
-                            }, index * 200);
+                        .forEach((el, i) => {
+                            setTimeout(
+                                () => el.classList.add("is-visible"),
+                                i * 200,
+                            );
                         });
                 }, 100);
 
-                // Variant Selection Logic
+                // Lógica variantes y carrito
+                initInteractions(activeVariants.length > 0);
+            }
+
+            function initInteractions(hasVariants) {
                 let selectedVariantId = null;
                 let selectedVariantName = null;
-                const hasVariants = document.querySelectorAll('.variant-btn').length > 0;
-                const variantBtns = document.querySelectorAll('.variant-btn');
-                const variantError = document.getElementById('variant-error');
+                const variantBtns = document.querySelectorAll(".variant-btn");
+                const variantError = document.getElementById("variant-error");
 
-                variantBtns.forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        variantBtns.forEach(b => b.classList.remove('selected'));
-                        btn.classList.add('selected');
-                        selectedVariantId = btn.getAttribute('data-id');
-                        selectedVariantName = btn.getAttribute('data-name');
-                        if (variantError) variantError.style.display = 'none';
+                variantBtns.forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        variantBtns.forEach((b) =>
+                            b.classList.remove("selected"),
+                        );
+                        btn.classList.add("selected");
+                        selectedVariantId = btn.getAttribute("data-id");
+                        selectedVariantName = btn.getAttribute("data-name");
+                        if (variantError) variantError.style.display = "none";
                     });
                 });
 
-                // Add to Cart logic
                 const addToCartBtn = document.getElementById("add-to-cart-btn");
-                if (addToCartBtn) {
-                    addToCartBtn.addEventListener("click", () => {
-                        if (hasVariants && !selectedVariantId) {
-                            if (variantError) variantError.style.display = 'block';
-                            return;
+                addToCartBtn.addEventListener("click", () => {
+                    if (hasVariants && !selectedVariantId) {
+                        if (variantError) variantError.style.display = "block";
+                        return;
+                    }
+                    const productData = JSON.parse(
+                        addToCartBtn.dataset.product || "{}",
+                    );
+                    if (selectedVariantId) {
+                        productData.variant_id = selectedVariantId;
+                        productData.name = `${productData.name} - ${selectedVariantName}`;
+                        const variantBtn = document.querySelector(
+                            `.variant-btn[data-id="${selectedVariantId}"]`,
+                        );
+                        if (variantBtn) {
+                            productData.stock = parseInt(
+                                variantBtn.getAttribute("data-stock") || "0",
+                                10,
+                            );
                         }
-
-                        const productData = JSON.parse(addToCartBtn.dataset.product || "{}");
-                        
-                        if (selectedVariantId) {
-                            productData.variant_id = selectedVariantId;
-                            // Append variant name to the product name for the cart display
-                            productData.name = `${productData.name} - ${selectedVariantName}`;
-                            
-                            // Override the product stock with the specific variant's stock
-                            const variantBtn = document.querySelector(`.variant-btn[data-id="${selectedVariantId}"]`);
-                            if (variantBtn) {
-                                productData.stock = parseInt(variantBtn.getAttribute('data-stock') || '0', 10);
-                            }
-                        }
-
-                        if (window.addToCart) {
-                            window.addToCart(productData);
-                        }
-                    });
-                }
-            });
+                    }
+                    if (window.addToCart) window.addToCart(productData);
+                });
+            }
         </script>
     </body>
 </html>
 
 <style>
-    /* Scoped styles */
+    /* Skeleton */
+    .skeleton-img {
+        flex: 1;
+        aspect-ratio: 4/5;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        animation: shimmer 1.5s ease-in-out infinite;
+        background-size: 200% 100%;
+        background-image: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.04) 25%,
+            rgba(255, 255, 255, 0.08) 50%,
+            rgba(255, 255, 255, 0.04) 75%
+        );
+    }
+    .skeleton-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+        padding-top: 2rem;
+    }
+    .skeleton-line {
+        height: 1.2rem;
+        border-radius: 4px;
+        animation: shimmer 1.5s ease-in-out infinite;
+        background-image: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.04) 25%,
+            rgba(255, 255, 255, 0.08) 50%,
+            rgba(255, 255, 255, 0.04) 75%
+        );
+        background-size: 200% 100%;
+    }
+    .skeleton-line.short {
+        width: 30%;
+    }
+    .skeleton-line.medium {
+        width: 60%;
+    }
+    .skeleton-line.long {
+        width: 80%;
+        height: 3rem;
+    }
+    @keyframes shimmer {
+        0% {
+            background-position: -200% 0;
+        }
+        100% {
+            background-position: 200% 0;
+        }
+    }
+
+    /* TUS MISMOS ESTILOS — no cambia nada */
     .product-page {
         padding: 4rem 5%;
         max-width: 1400px;
@@ -259,14 +387,12 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
         display: flex;
         align-items: center;
     }
-
     .product-container {
         display: flex;
         flex-direction: column;
         gap: 4rem;
         width: 100%;
     }
-
     @media (min-width: 900px) {
         .product-container {
             flex-direction: row;
@@ -277,11 +403,6 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
             flex: 1;
         }
     }
-
-    .product-image-col {
-        position: relative;
-    }
-
     .image-wrapper {
         position: relative;
         background: rgba(255, 255, 255, 0.03);
@@ -292,13 +413,11 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
         align-items: center;
         justify-content: center;
     }
-
     .image-wrapper img {
         width: 100%;
         height: 100%;
         object-fit: cover;
     }
-
     .sale-badge {
         position: absolute;
         top: 20px;
@@ -314,13 +433,11 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
         z-index: 10;
         font-family: "Oswald", sans-serif;
     }
-
     .product-info-col {
         display: flex;
         flex-direction: column;
         gap: 1.5rem;
     }
-
     .brand {
         font-size: 1.2rem;
         letter-spacing: 3px;
@@ -329,59 +446,42 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
         font-family: "Oswald", sans-serif;
         text-transform: uppercase;
     }
-
     .title {
         font-size: 3.5rem;
         line-height: 1.1;
-        margin-bottom: 0.5rem;
         font-family: "Oswald", sans-serif;
         text-transform: uppercase;
     }
-
     .price-container {
         display: flex;
         align-items: center;
         gap: 1.5rem;
-        margin-bottom: 1rem;
     }
-
     .current-price {
         font-size: 2.5rem;
         font-weight: 700;
         font-family: "Oswald", sans-serif;
-        text-transform: uppercase;
     }
-
     .original-price {
         font-size: 1.5rem;
         text-decoration: line-through;
         opacity: 0.5;
     }
-
     .description {
         font-size: 1.1rem;
         line-height: 1.8;
         opacity: 0.8;
-        margin-bottom: 1rem;
     }
-
-    /* Variants Styles */
-    .product-variants {
-        margin-bottom: 2rem;
-    }
-
     .variants-title {
         font-size: 1.1rem;
         margin-bottom: 1rem;
         font-weight: 600;
     }
-
     .variants-grid {
         display: flex;
         flex-wrap: wrap;
         gap: 0.8rem;
     }
-
     .variant-btn {
         background: transparent;
         border: 1px solid rgba(255, 255, 255, 0.3);
@@ -393,25 +493,21 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
         cursor: pointer;
         transition: all 0.3s ease;
     }
-
     .variant-btn:hover:not(.disabled) {
         border-color: #fff;
         background: rgba(255, 255, 255, 0.1);
     }
-
     .variant-btn.selected {
         border-color: #fff;
         background: #fff;
         color: #000;
         font-weight: 600;
     }
-
     .variant-btn.disabled {
         opacity: 0.3;
         cursor: not-allowed;
         text-decoration: line-through;
     }
-
     .add-to-cart-btn {
         background: #fff;
         color: #000;
@@ -430,20 +526,16 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
         font-family: "Oswald", sans-serif;
         text-transform: uppercase;
     }
-
     .add-to-cart-btn:hover {
         transform: translateY(-3px);
         background: #f0f0f0;
     }
-
     .product-details {
-        margin-bottom: 2rem;
         background: rgba(255, 255, 255, 0.02);
         padding: 1.5rem;
         border-radius: 8px;
         border: 1px solid rgba(255, 255, 255, 0.05);
     }
-
     .details-title {
         font-family: "Oswald", sans-serif;
         text-transform: uppercase;
@@ -453,42 +545,21 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         padding-bottom: 0.5rem;
     }
-
     .details-list {
         list-style: none;
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
     }
-
     .details-list li {
         display: flex;
         justify-content: space-between;
         font-size: 0.95rem;
     }
-
     .detail-key {
         opacity: 0.7;
         font-weight: 300;
     }
-
-    .detail-value {
-        font-weight: 400;
-        text-align: right;
-    }
-
-    .product-meta {
-        margin-top: 3rem;
-        padding-top: 2rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        font-size: 0.9rem;
-        opacity: 0.6;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    /* Animation */
     .reveal-item {
         opacity: 0;
         transform: translateY(30px);
@@ -503,7 +574,6 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
 </style>
 
 <style is:global>
-    /* Essential globals for body/html in case they aren't loaded */
     * {
         margin: 0;
         padding: 0;
