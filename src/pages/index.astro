@@ -100,7 +100,13 @@ try {
                     const cpResult = await catProdRes.json();
                     if (cpResult.success && cpResult.data) {
                         cat.products = cpResult.data
-                            .filter((p: any) => p.is_active && p.featured != 1 && p.featured !== true && p.featured !== "1")
+                            .filter(
+                                (p: any) =>
+                                    p.is_active &&
+                                    p.featured != 1 &&
+                                    p.featured !== true &&
+                                    p.featured !== "1",
+                            )
                             .sort(
                                 (a: any, b: any) =>
                                     a.display_order - b.display_order,
@@ -129,8 +135,7 @@ try {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Vapezone</title>
-        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2" />
         <link
             href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
             rel="stylesheet"
@@ -145,7 +150,12 @@ try {
                 <div class="filter-group">
                     <h3 class="filter-title">Buscar Producto</h3>
                     <div class="search-wrapper" style="position: relative;">
-                        <input type="text" id="product-search" placeholder="Escribe para buscar..." autocomplete="off" />
+                        <input
+                            type="text"
+                            id="product-search"
+                            placeholder="Escribe para buscar..."
+                            autocomplete="off"
+                        />
                         <div id="search-dropdown" class="search-dropdown"></div>
                     </div>
                 </div>
@@ -156,13 +166,15 @@ try {
                         <li>
                             <a href="/" class="active">Inicio</a>
                         </li>
-                        {allCategories.map((cat: any) => (
-                            <li>
-                                <a href={`/category/${cat.id}`}>
-                                    {cat.name}
-                                </a>
-                            </li>
-                        ))}
+                        {
+                            allCategories.map((cat: any) => (
+                                <li>
+                                    <a href={`/category/${cat.id}`}>
+                                        {cat.name}
+                                    </a>
+                                </li>
+                            ))
+                        }
                     </ul>
                 </div>
             </aside>
@@ -194,7 +206,10 @@ try {
                             <div class="products-grid">
                                 {category.products.map(
                                     (product: any, index: number) => (
-                                        <ProductCard product={product} index={index} />
+                                        <ProductCard
+                                            product={product}
+                                            index={index}
+                                        />
                                     ),
                                 )}
                             </div>
@@ -281,66 +296,92 @@ try {
                 });
 
                 // Home page search logic (Dropdown)
-                const searchInput = document.getElementById('product-search') as HTMLInputElement;
-                const searchDropdown = document.getElementById('search-dropdown');
-                
+                const searchInput = document.getElementById(
+                    "product-search",
+                ) as HTMLInputElement;
+                const searchDropdown =
+                    document.getElementById("search-dropdown");
+
                 let allProducts: any[] = [];
                 let isFetching = false;
-                
+
                 if (searchInput && searchDropdown) {
-                    searchInput.addEventListener('focus', async () => {
+                    searchInput.addEventListener("focus", async () => {
                         if (allProducts.length === 0 && !isFetching) {
                             isFetching = true;
                             try {
                                 const API_BASE_URL = "http://localhost:3000";
-                                const res = await fetch(`${API_BASE_URL}/products?limit=1000`);
+                                const res = await fetch(
+                                    `${API_BASE_URL}/products?limit=1000`,
+                                );
                                 const json = await res.json();
                                 if (json.success) {
-                                    allProducts = json.data.filter((p: any) => p.is_active);
+                                    allProducts = json.data.filter(
+                                        (p: any) => p.is_active,
+                                    );
                                 }
                             } catch (e) {
-                                console.error("Error fetching products for search", e);
+                                console.error(
+                                    "Error fetching products for search",
+                                    e,
+                                );
                             }
                         }
                     });
 
-                    searchInput.addEventListener('input', () => {
+                    searchInput.addEventListener("input", () => {
                         const term = searchInput.value.toLowerCase().trim();
                         if (term.length === 0) {
-                            searchDropdown.style.display = 'none';
+                            searchDropdown.style.display = "none";
                             return;
                         }
-                        
-                        const matches = allProducts.filter(p => 
-                            (p.name && p.name.toLowerCase().includes(term)) || 
-                            (p.brand && p.brand.toLowerCase().includes(term))
-                        ).slice(0, 6);
-                        
+
+                        const matches = allProducts
+                            .filter(
+                                (p) =>
+                                    (p.name &&
+                                        p.name.toLowerCase().includes(term)) ||
+                                    (p.brand &&
+                                        p.brand.toLowerCase().includes(term)),
+                            )
+                            .slice(0, 6);
+
                         if (matches.length > 0) {
-                            searchDropdown.innerHTML = matches.map(p => {
-                                const price = p.sale_price && parseFloat(p.sale_price) < parseFloat(p.price) ? p.sale_price : p.price;
-                                return `
+                            searchDropdown.innerHTML = matches
+                                .map((p) => {
+                                    const price =
+                                        p.sale_price &&
+                                        parseFloat(p.sale_price) <
+                                            parseFloat(p.price)
+                                            ? p.sale_price
+                                            : p.price;
+                                    return `
                                 <a href="/product/${p.id}" class="search-result-item">
                                     <img src="${p.image_url}" alt="${p.name}">
                                     <div class="search-result-info">
-                                        <span class="sr-brand">${p.brand || ''}</span>
+                                        <span class="sr-brand">${p.brand || ""}</span>
                                         <span class="sr-name">${p.name}</span>
                                         <span class="sr-price">$${price}</span>
                                     </div>
                                 </a>
                                 `;
-                            }).join('');
-                            searchDropdown.style.display = 'block';
+                                })
+                                .join("");
+                            searchDropdown.style.display = "block";
                         } else {
-                            searchDropdown.innerHTML = '<div class="sr-empty">No se encontraron productos</div>';
-                            searchDropdown.style.display = 'block';
+                            searchDropdown.innerHTML =
+                                '<div class="sr-empty">No se encontraron productos</div>';
+                            searchDropdown.style.display = "block";
                         }
                     });
-                    
-                    document.addEventListener('click', (e) => {
+
+                    document.addEventListener("click", (e) => {
                         const target = e.target as Node;
-                        if (!searchInput.contains(target) && !searchDropdown.contains(target)) {
-                            searchDropdown.style.display = 'none';
+                        if (
+                            !searchInput.contains(target) &&
+                            !searchDropdown.contains(target)
+                        ) {
+                            searchDropdown.style.display = "none";
                         }
                     });
                 }
@@ -552,7 +593,9 @@ try {
     .category-list a {
         color: rgba(255, 255, 255, 0.6);
         text-decoration: none;
-        transition: color 0.3s ease, padding-left 0.3s ease;
+        transition:
+            color 0.3s ease,
+            padding-left 0.3s ease;
         display: block;
     }
 
@@ -596,9 +639,9 @@ try {
         overflow-y: auto;
         display: none;
         z-index: 100;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
-    
+
     .search-result-item {
         display: flex;
         align-items: center;
@@ -606,14 +649,14 @@ try {
         padding: 10px;
         text-decoration: none;
         color: #fff;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         transition: background 0.2s;
     }
-    
+
     .search-result-item:hover {
-        background: rgba(255,255,255,0.05);
+        background: rgba(255, 255, 255, 0.05);
     }
-    
+
     .search-result-item img {
         width: 40px;
         height: 40px;
@@ -621,29 +664,29 @@ try {
         border-radius: 4px;
         background: #000;
     }
-    
+
     .search-result-info {
         display: flex;
         flex-direction: column;
     }
-    
+
     .sr-brand {
         font-size: 0.7rem;
         opacity: 0.5;
         text-transform: uppercase;
     }
-    
+
     .sr-name {
         font-size: 0.85rem;
         font-weight: 600;
     }
-    
+
     .sr-price {
         font-size: 0.8rem;
         color: #fff;
-        font-family: 'Oswald', sans-serif;
+        font-family: "Oswald", sans-serif;
     }
-    
+
     .sr-empty {
         padding: 15px;
         text-align: center;
