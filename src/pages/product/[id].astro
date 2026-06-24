@@ -21,7 +21,7 @@ export async function getStaticPaths() {
             const related = allProducts
                 .filter(
                     (p: any) =>
-                        p.is_active &&
+                        Number(p.is_active) === 1 &&
                         p.category_id != null &&
                         product.category_id != null &&
                         String(p.category_id) === String(product.category_id) &&
@@ -112,13 +112,9 @@ if (Array.isArray(product.images)) {
 
         <!-- DEBUG TEMPORAL -->
         <div
-            style="background:red; color:white; padding:20px; font-size:16px; position:fixed; top:80px; left:0; z-index:9999; max-width:400px;"
+            style="background:red; color:white; padding:20px; font-size:14px; position:fixed; top:80px; left:0; z-index:9999; max-width:500px; word-break:break-all;"
         >
-            Cat. producto: {basicProduct.category_id}
-            <br />
-            is_active: {String(basicProduct.is_active)}
-            <br />
-            Total productos: {relatedProducts.length}
+            basicProduct: {JSON.stringify(basicProduct)}
         </div>
 
         <div class="back-bar">
