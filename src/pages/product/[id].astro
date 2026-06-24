@@ -127,6 +127,17 @@ if (Array.isArray(product.images)) {
                                 )
                         }
                         <img id="main-product-image" src={allImages.length > 0 ? allImages[0] : product.image_url} alt={product.name} />
+                        
+                        {allImages.length > 1 && (
+                            <>
+                                <button type="button" class="gallery-nav prev" aria-label="Anterior imagen">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                                </button>
+                                <button type="button" class="gallery-nav next" aria-label="Siguiente imagen">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                                </button>
+                            </>
+                        )}
                     </div>
 
                     {allImages.length > 1 && (
@@ -309,20 +320,74 @@ if (Array.isArray(product.images)) {
                 // Lógica de Galería de Imágenes
                 const mainImage = document.getElementById('main-product-image') as HTMLImageElement;
                 const thumbnails = document.querySelectorAll('.gallery-thumbnail');
-                if (mainImage && thumbnails.length > 0) {
-                    thumbnails.forEach(thumb => {
-                        thumb.addEventListener('click', () => {
-                            // Actualizar clase activa
-                            thumbnails.forEach(t => t.classList.remove('active'));
-                            thumb.classList.add('active');
-                            
-                            // Cambiar imagen principal
-                            const newSrc = thumb.getAttribute('data-image');
-                            if (newSrc) {
+                const prevBtn = document.querySelector('.gallery-nav.prev');
+                const nextBtn = document.querySelector('.gallery-nav.next');
+                let currentImageIndex = 0;
+                let autoSlideInterval: number | undefined;
+
+                if (mainImage && thumbnails.length > 1) {
+                    const updateImage = (index: number) => {
+                        thumbnails.forEach(t => t.classList.remove('active'));
+                        thumbnails[index].classList.add('active');
+                        const newSrc = thumbnails[index].getAttribute('data-image');
+                        if (newSrc) {
+                            mainImage.style.opacity = '0.7';
+                            setTimeout(() => {
                                 mainImage.src = newSrc;
-                            }
+                                mainImage.style.opacity = '1';
+                            }, 150);
+                        }
+                        currentImageIndex = index;
+                    };
+
+                    const nextImage = () => {
+                        let nextIndex = currentImageIndex + 1;
+                        if (nextIndex >= thumbnails.length) nextIndex = 0;
+                        updateImage(nextIndex);
+                    };
+
+                    const prevImage = () => {
+                        let prevIndex = currentImageIndex - 1;
+                        if (prevIndex < 0) prevIndex = thumbnails.length - 1;
+                        updateImage(prevIndex);
+                    };
+
+                    const startAutoSlide = () => {
+                        clearInterval(autoSlideInterval);
+                        autoSlideInterval = window.setInterval(nextImage, 4000);
+                    };
+
+                    thumbnails.forEach((thumb, index) => {
+                        thumb.addEventListener('click', () => {
+                            updateImage(index);
+                            startAutoSlide(); // Reiniciar timer
                         });
                     });
+
+                    if (prevBtn) {
+                        prevBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            prevImage();
+                            startAutoSlide();
+                        });
+                    }
+
+                    if (nextBtn) {
+                        nextBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            nextImage();
+                            startAutoSlide();
+                        });
+                    }
+
+                    // Pausar al hacer hover en la imagen principal
+                    const imageWrapper = document.querySelector('.image-wrapper');
+                    if (imageWrapper) {
+                        imageWrapper.addEventListener('mouseenter', () => clearInterval(autoSlideInterval));
+                        imageWrapper.addEventListener('mouseleave', startAutoSlide);
+                    }
+
+                    startAutoSlide();
                 }
 
                 // Variant Selection Logic
@@ -515,6 +580,43 @@ if (Array.isArray(product.images)) {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transition: opacity 0.3s ease;
+    }
+
+    .gallery-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(4px);
+    }
+
+    .image-wrapper:hover .gallery-nav {
+        opacity: 1;
+    }
+
+    .gallery-nav:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    .gallery-nav.prev {
+        left: 10px;
+    }
+
+    .gallery-nav.next {
+        right: 10px;
     }
 
     .sale-badge {
