@@ -112,11 +112,13 @@ if (Array.isArray(product.images)) {
 
         <!-- DEBUG TEMPORAL -->
         <div
-            style="background:red; color:white; padding:20px; font-size:18px; position:fixed; top:80px; left:0; z-index:9999;"
+            style="background:red; color:white; padding:20px; font-size:16px; position:fixed; top:80px; left:0; z-index:9999; max-width:400px;"
         >
-            Relacionados: {relatedProducts.length} | Cat. producto: {
-                basicProduct.category_id
-            }
+            Cat. producto: {basicProduct.category_id}
+            <br />
+            is_active: {String(basicProduct.is_active)}
+            <br />
+            Total productos: {relatedProducts.length}
         </div>
 
         <div class="back-bar">
