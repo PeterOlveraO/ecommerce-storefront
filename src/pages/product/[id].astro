@@ -122,14 +122,7 @@ if (Array.isArray(product.images)) {
     </head>
     <body>
         <Navbar solid={true} />
-        <!-- DEBUG -->
-        <div
-            style="background:red;color:white;padding:20px;position:fixed;top:80px;left:0;z-index:9999;max-width:500px;word-break:break-all;font-size:13px;"
-        >
-            categories: {JSON.stringify(fullProduct.categories)}
-            <br />
-            relatedProducts: {relatedProducts.length}
-        </div>
+
         <div class="back-bar">
             <button
                 id="back-btn"
@@ -433,6 +426,9 @@ if (Array.isArray(product.images)) {
                         threshold: 0.05,
                     },
                 );
+                document.querySelectorAll(".reveal-on-scroll").forEach((el) => {
+                    observer.observe(el);
+                });
 
                 // Lógica de Galería de Imágenes
                 const mainImage = document.getElementById(
