@@ -14,32 +14,34 @@ const { headerProducts } = Astro.props;
                         <div class="bg-gradient" />
                         <div class="color-tint" />
                     </div>
-                    <div class="slide-content">
-                        <div class="product-info-left">
-                            <h1 class="product-name">{product.name}</h1>
-                            <p class="product-tagline">{product.tagline}</p>
+                    {product.is_product && (
+                        <div class="slide-content">
+                            <div class="product-info-left">
+                                <h1 class="product-name">{product.name}</h1>
+                                <p class="product-tagline">{product.tagline}</p>
+                            </div>
+                            <div class="product-info-right">
+                                {product.price && (
+                                    <div class="product-price-container">
+                                        <p class="product-price">${product.price}</p>
+                                        {product.original_price && (
+                                            <p class="product-original-price" style="text-decoration: line-through; opacity: 0.6; font-size: 1.2rem; margin-top: -10px; margin-bottom: 10px;">
+                                                ${product.original_price}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                                {product.description && (
+                                    <p class="product-desc">{product.description}</p>
+                                )}
+                                {product.link && product.link !== '/' && (
+                                    <a href={product.link} class="add-to-cart" aria-label="Ver más" style="display: flex; align-items: center; justify-content: center; text-decoration: none;">
+                                        <span>→</span>
+                                    </a>
+                                )}
+                            </div>
                         </div>
-                        <div class="product-info-right">
-                            {product.price && (
-                                <div class="product-price-container">
-                                    <p class="product-price">${product.price}</p>
-                                    {product.original_price && (
-                                        <p class="product-original-price" style="text-decoration: line-through; opacity: 0.6; font-size: 1.2rem; margin-top: -10px; margin-bottom: 10px;">
-                                            ${product.original_price}
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-                            {product.description && (
-                                <p class="product-desc">{product.description}</p>
-                            )}
-                            {product.link && product.link !== '/' && (
-                                <a href={product.link} class="add-to-cart" aria-label="Ver más" style="display: flex; align-items: center; justify-content: center; text-decoration: none;">
-                                    <span>→</span>
-                                </a>
-                            )}
-                        </div>
-                    </div>
+                    )}
                 </div>
             ))
         }
