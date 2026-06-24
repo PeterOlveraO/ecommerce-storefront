@@ -110,6 +110,15 @@ if (Array.isArray(product.images)) {
     <body>
         <Navbar solid={true} />
 
+        <!-- DEBUG TEMPORAL -->
+        <div
+            style="background:red; color:white; padding:20px; font-size:18px; position:fixed; top:80px; left:0; z-index:9999;"
+        >
+            Relacionados: {relatedProducts.length} | Cat. producto: {
+                basicProduct.category_id
+            }
+        </div>
+
         <div class="back-bar">
             <button
                 id="back-btn"
