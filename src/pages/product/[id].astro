@@ -39,11 +39,11 @@ try {
             // Sacar el category_id desde las categorías que ya devuelve /products/:id
             const cats = fullProduct.categories;
             let categoryId = null;
+            const parsedCats =
+                typeof cats === "string" ? JSON.parse(cats) : cats;
 
-            if (Array.isArray(cats) && cats.length > 0) {
-                const first =
-                    typeof cats[0] === "string" ? JSON.parse(cats[0]) : cats[0];
-                categoryId = first?.id ?? null;
+            if (Array.isArray(parsedCats) && parsedCats.length > 0) {
+                categoryId = parsedCats[0]?.id ?? null;
             }
 
             // Fetch productos de la misma categoría
