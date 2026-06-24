@@ -214,33 +214,70 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
 
         {
             relatedProducts.length > 0 && (
-                <section class="related-section">
-                    <div class="related-container">
-                        <h2 class="related-title">También te puede gustar</h2>
-                        <div class="related-grid">
+                <div class="related-wrapper container">
+                    <section class="store-section reveal-on-scroll">
+                        <div class="category-header reveal-item">
+                            <h2 class="section-title">También te puede gustar</h2>
+                            <a
+                                href={`/category/${basicProduct.category_id}`}
+                                class="category-link"
+                            >
+                                Ver todo{" "}
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path d="M5 12h14M12 5l7 7-7 7" />
+                                </svg>
+                            </a>
+                        </div>
+                        <div class="products-grid">
                             {relatedProducts.map((rp: any, index: number) => (
                                 <ProductCard product={rp} index={index} />
                             ))}
                         </div>
-                    </div>
-                </section>
+                    </section>
+                </div>
             )
         }
 
         <Footer />
 
         <script>
-            // Simple reveal animation for product page
+            // Reveal animation — igual que index.astro
             document.addEventListener("DOMContentLoaded", () => {
+                // Animar los .reveal-item del producto inmediatamente
                 setTimeout(() => {
                     document
-                        .querySelectorAll(".reveal-item")
+                        .querySelectorAll(".product-page .reveal-item")
                         .forEach((el, index) => {
                             setTimeout(() => {
                                 el.classList.add("is-visible");
                             }, index * 200);
                         });
                 }, 100);
+
+                // Animar la sección de productos relacionados con IntersectionObserver
+                // (igual que index.astro)
+                const observer = new IntersectionObserver(
+                    (entries, obs) => {
+                        entries.forEach((entry) => {
+                            if (entry.isIntersecting) {
+                                entry.target.classList.add("is-visible");
+                                obs.unobserve(entry.target);
+                            }
+                        });
+                    },
+                    { root: null, rootMargin: "0px", threshold: 0.15 }
+                );
+
+                document.querySelectorAll(".reveal-on-scroll").forEach((el) => {
+                    observer.observe(el);
+                });
 
                 // Variant Selection Logic
                 let selectedVariantId = null;
@@ -323,124 +360,66 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
         transform: translateX(-2px);
     }
 
-    /* Related products */
-    .related-section {
-        padding: 5rem 5% 6rem;
+    /* Sección de productos relacionados — mismos estilos que index.astro */
+    .related-wrapper {
+        padding: 0 0 5rem 0;
         border-top: 1px solid rgba(255, 255, 255, 0.06);
-        background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.015));
+        margin-top: 2rem;
     }
 
-    .related-container {
+    .container {
         max-width: 1400px;
         margin: 0 auto;
+        padding: 0 5%;
     }
 
-    .related-title {
+    .store-section {
+        padding: 4rem 0 0 0;
+    }
+
+    .category-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 2.5rem;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 1rem;
+    }
+
+    .section-title {
+        font-size: 2.5rem;
+        letter-spacing: 2px;
         font-family: "Oswald", sans-serif;
         text-transform: uppercase;
-        font-size: 2rem;
-        letter-spacing: 2px;
-        margin-bottom: 2.5rem;
-        color: #fff;
     }
 
-    .related-grid {
+    .category-link {
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        opacity: 0.7;
+        font-weight: 400;
+        text-decoration: none;
+        color: #fff;
+        transition: opacity 0.3s;
+        margin-bottom: 0.5rem;
+    }
+
+    .category-link:hover {
+        opacity: 1;
+    }
+
+    .products-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 1.5rem;
     }
 
     @media (min-width: 768px) {
-        .related-grid {
+        .products-grid {
             grid-template-columns: repeat(4, 1fr);
         }
-    }
-
-    .related-card {
-        display: flex;
-        flex-direction: column;
-        text-decoration: none;
-        color: #fff;
-        transition: transform 0.3s ease;
-    }
-
-    .related-card:hover {
-        transform: translateY(-5px);
-    }
-
-    .related-img-wrap {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 4/5;
-        overflow: hidden;
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.03);
-        margin-bottom: 1rem;
-    }
-
-    .related-img-wrap img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.5s ease;
-    }
-
-    .related-card:hover .related-img-wrap img {
-        transform: scale(1.05);
-    }
-
-    .related-badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: #fff;
-        color: #000;
-        padding: 4px 8px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        border-radius: 2px;
-        font-family: "Oswald", sans-serif;
-    }
-
-    .related-info {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-
-    .related-brand {
-        font-size: 0.8rem;
-        opacity: 0.6;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .related-name {
-        font-size: 1rem;
-        font-weight: 400;
-        font-family: "Inter", sans-serif;
-        line-height: 1.4;
-        margin-bottom: 0.3rem;
-    }
-
-    .related-price-wrap {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-    }
-
-    .related-price {
-        font-family: "Oswald", sans-serif;
-        font-size: 1.1rem;
-        font-weight: 700;
-    }
-
-    .related-original {
-        font-size: 0.85rem;
-        text-decoration: line-through;
-        opacity: 0.5;
     }
 
     /* Scoped styles */
@@ -706,5 +685,17 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
         background-color: #000;
         color: #fff;
         font-family: "Inter", sans-serif;
+    }
+    /* Reveal animation para la sección de relacionados */
+    .reveal-item {
+        opacity: 0;
+        transform: translateY(40px);
+        transition:
+            opacity 0.8s ease-out,
+            transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .reveal-on-scroll.is-visible .reveal-item {
+        opacity: 1;
+        transform: translateY(0);
     }
 </style>
