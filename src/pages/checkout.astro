@@ -8,7 +8,7 @@ import Footer from "../components/Footer.astro";
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Checkout | Angel Ecommerce</title>
+        <title>Checkout | VapeZone</title>
         <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2" />
         <link
             href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400;600;700&display=swap"
@@ -179,7 +179,8 @@ import Footer from "../components/Footer.astro";
             return;
         }
 
-        const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
+        const API_BASE_URL =
+            import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
         let cart = JSON.parse(localStorage.getItem("angel_cart") || "[]");
 
         if (cart.length === 0) {
