@@ -14,9 +14,6 @@ export async function getStaticPaths() {
 
         const allProducts = result.data;
 
-        <p style="color: red; font-size: 20px; position: fixed; top: 0; z-index: 9999;">
-            Relacionados: {relatedProducts.length}
-        </p>;
         // Calculamos los productos relacionados aquí mismo, dentro de getStaticPaths,
         // usando la misma lista que ya tenemos — sin ningún fetch extra que pueda fallar.
         // Mismo patrón que category/[id].astro: los datos vienen garantizados como props.
@@ -30,15 +27,11 @@ export async function getStaticPaths() {
                         String(p.category_id) === String(product.category_id) &&
                         String(p.id) !== String(product.id),
                 )
-
                 .sort(
                     (a: any, b: any) =>
                         (a.display_order ?? 0) - (b.display_order ?? 0),
                 )
                 .slice(0, 4);
-            console.log(
-                `Producto ID: ${product.id} | Categoría: ${product.category_id} | Relacionados: ${related.length}`,
-            );
 
             return {
                 params: { id: product.id },
