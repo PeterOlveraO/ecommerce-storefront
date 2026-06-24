@@ -28,6 +28,7 @@ const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
 // Fetch full product details including variants y categorías
 let fullProduct = basicProduct;
 let relatedProducts: any[] = [];
+let categoryId: string | null = null; // 👈 agregar aquí fuera
 
 try {
     const res = await fetch(`${API_BASE_URL}/products/${basicProduct.id}`);
@@ -356,7 +357,7 @@ if (Array.isArray(product.images)) {
                                 También te puede gustar
                             </h2>
                             <a
-                                href={`/category/${basicProduct.category_id}`}
+                                href={`/category/${categoryId}`}
                                 class="category-link"
                             >
                                 Ver todo{" "}
