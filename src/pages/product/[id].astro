@@ -11,9 +11,11 @@ export async function getStaticPaths() {
         const result = await res.json();
         if (!result.success || !result.data) return [];
 
+        // Igual que la página de categoría: pasar datos garantizados como props
+        // para no depender de lo que devuelva el endpoint de detalle
         return result.data.map((product: any) => ({
             params: { id: product.id },
-            props: { product },
+            props: { product, categoryId: product.category_id ?? null },
         }));
     } catch (e) {
         console.error("Error fetching products for paths", e);
@@ -21,12 +23,13 @@ export async function getStaticPaths() {
     }
 }
 
-const { product: basicProduct } = Astro.props;
+// categoryId viene garantizado desde getStaticPaths (igual que category.id en la página de categoría)
+const { product: basicProduct, categoryId } = Astro.props;
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
 
 // Fetch full product details including variants
 let fullProduct = basicProduct;
 try {
-    const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
     const res = await fetch(`${API_BASE_URL}/products/${basicProduct.id}`);
     if (res.ok) {
         const json = await res.json();
@@ -54,21 +57,17 @@ if (product.details) {
 
 const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
 
-// Fetch related products from same category
-// basicProduct.category_id se usa como respaldo en caso de que el endpoint
-// de detalle no devuelva category_id
-const categoryId = product.category_id ?? basicProduct.category_id;
+// Fetch related products — mismo patrón que category/[id].astro
+// Usa categoryId que viene de getStaticPaths (siempre disponible)
 let relatedProducts: any[] = [];
 try {
-    const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
     if (categoryId) {
-        const relRes = await fetch(`${API_BASE_URL}/products?category_id=${categoryId}&limit=50`);
+        const relRes = await fetch(`${API_BASE_URL}/products?category_id=${categoryId}&limit=100`);
         if (relRes.ok) {
             const relJson = await relRes.json();
             if (relJson.success && relJson.data) {
                 relatedProducts = relJson.data
-                    // != en lugar de !== para evitar mismatch string/número en el id
-                    .filter((p: any) => p.is_active && p.id != product.id)
+                    .filter((p: any) => p.is_active && p.id != basicProduct.id)
                     .sort((a: any, b: any) => a.display_order - b.display_order)
                     .slice(0, 4);
             }
