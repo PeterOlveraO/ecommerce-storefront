@@ -19,14 +19,18 @@ export async function getStaticPaths() {
         // Mismo patrón que category/[id].astro: los datos vienen garantizados como props.
         return allProducts.map((product: any) => {
             const related = allProducts
-                .filter((p: any) =>
-                    p.is_active &&
-                    p.category_id != null &&
-                    product.category_id != null &&
-                    String(p.category_id) === String(product.category_id) &&
-                    String(p.id) !== String(product.id)
+                .filter(
+                    (p: any) =>
+                        p.is_active &&
+                        p.category_id != null &&
+                        product.category_id != null &&
+                        String(p.category_id) === String(product.category_id) &&
+                        String(p.id) !== String(product.id),
                 )
-                .sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0))
+                .sort(
+                    (a: any, b: any) =>
+                        (a.display_order ?? 0) - (b.display_order ?? 0),
+                )
                 .slice(0, 4);
 
             return {
@@ -77,8 +81,8 @@ const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
 const allImages: string[] = [];
 const getFullUrl = (url: string) => {
     if (!url) return "";
-    if (url.startsWith('http')) return url;
-    return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+    if (url.startsWith("http")) return url;
+    return `${API_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
 };
 
 if (product.image_url) {
@@ -107,9 +111,20 @@ if (Array.isArray(product.images)) {
         <Navbar solid={true} />
 
         <div class="back-bar">
-            <button id="back-btn" class="back-btn" onclick="history.length > 1 ? history.back() : window.location.href = '/'">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path d="M19 12H5M12 5l-7 7 7 7"/>
+            <button
+                id="back-btn"
+                class="back-btn"
+                onclick="history.length > 1 ? history.back() : window.location.href = '/'"
+            >
+                <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                >
+                    <path d="M19 12H5M12 5l-7 7 7 7"></path>
                 </svg>
                 Regresar
             </button>
@@ -126,29 +141,74 @@ if (Array.isArray(product.images)) {
                                     <span class="sale-badge">Oferta</span>
                                 )
                         }
-                        <img id="main-product-image" src={allImages.length > 0 ? allImages[0] : product.image_url} alt={product.name} />
-                        
-                        {allImages.length > 1 && (
-                            <>
-                                <button type="button" class="gallery-nav prev" aria-label="Anterior imagen">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-                                </button>
-                                <button type="button" class="gallery-nav next" aria-label="Siguiente imagen">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-                                </button>
-                            </>
-                        )}
+                        <img
+                            id="main-product-image"
+                            src={allImages.length > 0
+                                ? allImages[0]
+                                : product.image_url}
+                            alt={product.name}
+                        />
+
+                        {
+                            allImages.length > 1 && (
+                                <>
+                                    <button
+                                        type="button"
+                                        class="gallery-nav prev"
+                                        aria-label="Anterior imagen"
+                                    >
+                                        <svg
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                        >
+                                            <path d="M15 18l-6-6 6-6" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="gallery-nav next"
+                                        aria-label="Siguiente imagen"
+                                    >
+                                        <svg
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                        >
+                                            <path d="M9 18l6-6-6-6" />
+                                        </svg>
+                                    </button>
+                                </>
+                            )
+                        }
                     </div>
 
-                    {allImages.length > 1 && (
-                        <div class="product-gallery">
-                            {allImages.map((img: string, index: number) => (
-                                <button type="button" class={`gallery-thumbnail ${index === 0 ? 'active' : ''}`} data-image={img} aria-label={`Ver imagen ${index + 1}`}>
-                                    <img src={img} alt={`${product.name} - Vista ${index + 1}`} loading="lazy" />
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    {
+                        allImages.length > 1 && (
+                            <div class="product-gallery">
+                                {allImages.map((img: string, index: number) => (
+                                    <button
+                                        type="button"
+                                        class={`gallery-thumbnail ${index === 0 ? "active" : ""}`}
+                                        data-image={img}
+                                        aria-label={`Ver imagen ${index + 1}`}
+                                    >
+                                        <img
+                                            src={img}
+                                            alt={`${product.name} - Vista ${index + 1}`}
+                                            loading="lazy"
+                                        />
+                                    </button>
+                                ))}
+                            </div>
+                        )
+                    }
                 </div>
 
                 <div class="product-info-col reveal-item">
@@ -183,26 +243,45 @@ if (Array.isArray(product.images)) {
                     {
                         activeVariants.length > 0 && (
                             <div class="product-variants">
-                                <h3 class="variants-title">Selecciona una opción:</h3>
-                                <div class="variants-grid" id="variants-container">
+                                <h3 class="variants-title">
+                                    Selecciona una opción:
+                                </h3>
+                                <div
+                                    class="variants-grid"
+                                    id="variants-container"
+                                >
                                     {activeVariants.map((variant: any) => {
-                                        const isOutOfStock = variant.stock === 0;
+                                        const isOutOfStock =
+                                            variant.stock === 0;
                                         return (
-                                            <button 
-                                                class={`variant-btn ${isOutOfStock ? 'disabled' : ''}`}
+                                            <button
+                                                class={`variant-btn ${isOutOfStock ? "disabled" : ""}`}
                                                 data-id={variant.id}
-                                                data-name={variant.variante1 + (variant.variante2 ? ` - ${variant.variante2}` : '')}
+                                                data-name={
+                                                    variant.variante1 +
+                                                    (variant.variante2
+                                                        ? ` - ${variant.variante2}`
+                                                        : "")
+                                                }
                                                 data-stock={variant.stock}
                                                 disabled={isOutOfStock}
                                             >
                                                 {variant.variante1}
-                                                {variant.variante2 && ` - ${variant.variante2}`}
-                                                {isOutOfStock && ' (Agotado)'}
+                                                {variant.variante2 &&
+                                                    ` - ${variant.variante2}`}
+                                                {isOutOfStock && " (Agotado)"}
                                             </button>
                                         );
                                     })}
                                 </div>
-                                <p id="variant-error" class="variant-error" style="display: none; color: #ff4d4d; margin-top: 10px;">Por favor, selecciona una opción antes de añadir al carrito.</p>
+                                <p
+                                    id="variant-error"
+                                    class="variant-error"
+                                    style="display: none; color: #ff4d4d; margin-top: 10px;"
+                                >
+                                    Por favor, selecciona una opción antes de
+                                    añadir al carrito.
+                                </p>
                             </div>
                         )
                     }
@@ -232,16 +311,21 @@ if (Array.isArray(product.images)) {
                             )
                     }
 
-                    <button 
-                        id="add-to-cart-btn" 
+                    <button
+                        id="add-to-cart-btn"
                         class="add-to-cart-btn"
                         data-product={JSON.stringify({
                             id: product.id,
                             name: product.name,
                             brand: product.brand,
-                            price: product.sale_price && parseFloat(product.sale_price) < parseFloat(product.price) ? product.sale_price : product.price,
+                            price:
+                                product.sale_price &&
+                                parseFloat(product.sale_price) <
+                                    parseFloat(product.price)
+                                    ? product.sale_price
+                                    : product.price,
                             image_url: product.image_url,
-                            stock: product.stock
+                            stock: product.stock,
                         })}
                     >
                         AÑADIR AL CARRITO
@@ -255,7 +339,9 @@ if (Array.isArray(product.images)) {
                 <div class="related-wrapper container">
                     <section class="store-section reveal-on-scroll">
                         <div class="category-header reveal-item">
-                            <h2 class="section-title">También te puede gustar</h2>
+                            <h2 class="section-title">
+                                También te puede gustar
+                            </h2>
                             <a
                                 href={`/category/${basicProduct.category_id}`}
                                 class="category-link"
@@ -301,40 +387,55 @@ if (Array.isArray(product.images)) {
 
                 // Animar la sección de productos relacionados con IntersectionObserver
                 // (igual que index.astro)
+                // Animar la sección de productos relacionados con IntersectionObserver
                 const observer = new IntersectionObserver(
                     (entries, obs) => {
                         entries.forEach((entry) => {
                             if (entry.isIntersecting) {
                                 entry.target.classList.add("is-visible");
+                                // Añadir is-visible directamente a cada hijo con stagger
+                                entry.target
+                                    .querySelectorAll(".reveal-item")
+                                    .forEach((item, i) => {
+                                        setTimeout(() => {
+                                            (item as HTMLElement).classList.add(
+                                                "is-visible",
+                                            );
+                                        }, i * 150);
+                                    });
                                 obs.unobserve(entry.target);
                             }
                         });
                     },
-                    { root: null, rootMargin: "0px", threshold: 0.15 }
+                    {
+                        root: null,
+                        rootMargin: "0px 0px -80px 0px",
+                        threshold: 0.05,
+                    },
                 );
 
-                document.querySelectorAll(".reveal-on-scroll").forEach((el) => {
-                    observer.observe(el);
-                });
-
                 // Lógica de Galería de Imágenes
-                const mainImage = document.getElementById('main-product-image') as HTMLImageElement;
-                const thumbnails = document.querySelectorAll('.gallery-thumbnail');
-                const prevBtn = document.querySelector('.gallery-nav.prev');
-                const nextBtn = document.querySelector('.gallery-nav.next');
+                const mainImage = document.getElementById(
+                    "main-product-image",
+                ) as HTMLImageElement;
+                const thumbnails =
+                    document.querySelectorAll(".gallery-thumbnail");
+                const prevBtn = document.querySelector(".gallery-nav.prev");
+                const nextBtn = document.querySelector(".gallery-nav.next");
                 let currentImageIndex = 0;
                 let autoSlideInterval: number | undefined;
 
                 if (mainImage && thumbnails.length > 1) {
                     const updateImage = (index: number) => {
-                        thumbnails.forEach(t => t.classList.remove('active'));
-                        thumbnails[index].classList.add('active');
-                        const newSrc = thumbnails[index].getAttribute('data-image');
+                        thumbnails.forEach((t) => t.classList.remove("active"));
+                        thumbnails[index].classList.add("active");
+                        const newSrc =
+                            thumbnails[index].getAttribute("data-image");
                         if (newSrc) {
-                            mainImage.style.opacity = '0.7';
+                            mainImage.style.opacity = "0.7";
                             setTimeout(() => {
                                 mainImage.src = newSrc;
-                                mainImage.style.opacity = '1';
+                                mainImage.style.opacity = "1";
                             }, 150);
                         }
                         currentImageIndex = index;
@@ -358,14 +459,14 @@ if (Array.isArray(product.images)) {
                     };
 
                     thumbnails.forEach((thumb, index) => {
-                        thumb.addEventListener('click', () => {
+                        thumb.addEventListener("click", () => {
                             updateImage(index);
                             startAutoSlide(); // Reiniciar timer
                         });
                     });
 
                     if (prevBtn) {
-                        prevBtn.addEventListener('click', (e) => {
+                        prevBtn.addEventListener("click", (e) => {
                             e.preventDefault();
                             prevImage();
                             startAutoSlide();
@@ -373,7 +474,7 @@ if (Array.isArray(product.images)) {
                     }
 
                     if (nextBtn) {
-                        nextBtn.addEventListener('click', (e) => {
+                        nextBtn.addEventListener("click", (e) => {
                             e.preventDefault();
                             nextImage();
                             startAutoSlide();
@@ -381,10 +482,16 @@ if (Array.isArray(product.images)) {
                     }
 
                     // Pausar al hacer hover en la imagen principal
-                    const imageWrapper = document.querySelector('.image-wrapper');
+                    const imageWrapper =
+                        document.querySelector(".image-wrapper");
                     if (imageWrapper) {
-                        imageWrapper.addEventListener('mouseenter', () => clearInterval(autoSlideInterval));
-                        imageWrapper.addEventListener('mouseleave', startAutoSlide);
+                        imageWrapper.addEventListener("mouseenter", () =>
+                            clearInterval(autoSlideInterval),
+                        );
+                        imageWrapper.addEventListener(
+                            "mouseleave",
+                            startAutoSlide,
+                        );
                     }
 
                     startAutoSlide();
@@ -393,17 +500,20 @@ if (Array.isArray(product.images)) {
                 // Variant Selection Logic
                 let selectedVariantId = null;
                 let selectedVariantName = null;
-                const hasVariants = document.querySelectorAll('.variant-btn').length > 0;
-                const variantBtns = document.querySelectorAll('.variant-btn');
-                const variantError = document.getElementById('variant-error');
+                const hasVariants =
+                    document.querySelectorAll(".variant-btn").length > 0;
+                const variantBtns = document.querySelectorAll(".variant-btn");
+                const variantError = document.getElementById("variant-error");
 
-                variantBtns.forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        variantBtns.forEach(b => b.classList.remove('selected'));
-                        btn.classList.add('selected');
-                        selectedVariantId = btn.getAttribute('data-id');
-                        selectedVariantName = btn.getAttribute('data-name');
-                        if (variantError) variantError.style.display = 'none';
+                variantBtns.forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        variantBtns.forEach((b) =>
+                            b.classList.remove("selected"),
+                        );
+                        btn.classList.add("selected");
+                        selectedVariantId = btn.getAttribute("data-id");
+                        selectedVariantName = btn.getAttribute("data-name");
+                        if (variantError) variantError.style.display = "none";
                     });
                 });
 
@@ -412,21 +522,30 @@ if (Array.isArray(product.images)) {
                 if (addToCartBtn) {
                     addToCartBtn.addEventListener("click", () => {
                         if (hasVariants && !selectedVariantId) {
-                            if (variantError) variantError.style.display = 'block';
+                            if (variantError)
+                                variantError.style.display = "block";
                             return;
                         }
 
-                        const productData = JSON.parse(addToCartBtn.dataset.product || "{}");
-                        
+                        const productData = JSON.parse(
+                            addToCartBtn.dataset.product || "{}",
+                        );
+
                         if (selectedVariantId) {
                             productData.variant_id = selectedVariantId;
                             // Append variant name to the product name for the cart display
                             productData.name = `${productData.name} - ${selectedVariantName}`;
-                            
+
                             // Override the product stock with the specific variant's stock
-                            const variantBtn = document.querySelector(`.variant-btn[data-id="${selectedVariantId}"]`);
+                            const variantBtn = document.querySelector(
+                                `.variant-btn[data-id="${selectedVariantId}"]`,
+                            );
                             if (variantBtn) {
-                                productData.stock = parseInt(variantBtn.getAttribute('data-stock') || '0', 10);
+                                productData.stock = parseInt(
+                                    variantBtn.getAttribute("data-stock") ||
+                                        "0",
+                                    10,
+                                );
                             }
                         }
 
@@ -643,7 +762,7 @@ if (Array.isArray(product.images)) {
         overflow-x: auto;
         padding-bottom: 0.5rem;
         scrollbar-width: thin;
-        scrollbar-color: rgba(255,255,255,0.2) transparent;
+        scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
     }
 
     .product-gallery::-webkit-scrollbar {
@@ -651,7 +770,7 @@ if (Array.isArray(product.images)) {
     }
 
     .product-gallery::-webkit-scrollbar-thumb {
-        background: rgba(255,255,255,0.2);
+        background: rgba(255, 255, 255, 0.2);
         border-radius: 3px;
     }
 
@@ -662,7 +781,7 @@ if (Array.isArray(product.images)) {
         overflow: hidden;
         border: 2px solid transparent;
         cursor: pointer;
-        background: rgba(255,255,255,0.03);
+        background: rgba(255, 255, 255, 0.03);
         transition: all 0.3s ease;
         padding: 0;
     }
@@ -674,7 +793,7 @@ if (Array.isArray(product.images)) {
     }
 
     .gallery-thumbnail:hover {
-        border-color: rgba(255,255,255,0.5);
+        border-color: rgba(255, 255, 255, 0.5);
     }
 
     .gallery-thumbnail.active {
