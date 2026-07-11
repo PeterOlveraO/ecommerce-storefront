@@ -1,8 +1,7 @@
 ---
-import Navbar from "../components/Navbar.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
 import HeroCarousel from "../components/HeroCarousel.astro";
 import ProductCard from "../components/ProductCard.astro";
-import Footer from "../components/Footer.astro";
 
 const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
 
@@ -128,21 +127,7 @@ try {
     console.error("Error fetching data:", error);
 }
 ---
-
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Vapezone</title>
-        <link rel="icon" type="image/x-icon" href="/favicon.png" />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
-            rel="stylesheet"
-        />
-    </head>
-    <body>
-        <Navbar />
+<BaseLayout title="Vapezone">
         <HeroCarousel headerProducts={headerProducts} />
 
         <div class="shop-layout container" style="margin-top: 4rem;">
@@ -269,10 +254,10 @@ try {
             </div>
         </section>
 
-        <Footer />
+
 
         <script>
-            document.addEventListener("DOMContentLoaded", () => {
+            document.addEventListener("astro:page-load", () => {
                 const observerOptions = {
                     root: null,
                     rootMargin: "0px",
@@ -389,8 +374,7 @@ try {
                 }
             });
         </script>
-    </body>
-</html>
+
 
 <style is:global>
     /* Reset & Base */
@@ -696,3 +680,4 @@ try {
         opacity: 0.6;
     }
 </style>
+</BaseLayout>

@@ -65,7 +65,7 @@ const { headerProducts } = Astro.props;
 </main>
 
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("astro:page-load", () => {
         const track = document.getElementById("carousel-track");
         const dots = document.querySelectorAll(".dot");
         const prevBtn = document.getElementById("prev-btn");

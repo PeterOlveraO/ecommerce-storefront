@@ -1,22 +1,8 @@
 ---
-import Navbar from '../components/Navbar.astro';
-import Footer from '../components/Footer.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<!doctype html>
-<html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Preguntas Frecuentes | VapeZone</title>
-        <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2" />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
-            rel="stylesheet"
-        />
-    </head>
-    <body>
-        <Navbar solid={true} />
+<BaseLayout title="Preguntas Frecuentes | VapeZone" navbarSolid={true}>
 
         <main class="legal-page">
             <div class="legal-container reveal-item is-visible">
@@ -75,9 +61,7 @@ import Footer from '../components/Footer.astro';
             </div>
         </main>
 
-        <Footer />
-    </body>
-</html>
+
 
 <style is:global>
     * {
@@ -192,3 +176,4 @@ import Footer from '../components/Footer.astro';
         transform: translateY(0);
     }
 </style>
+</BaseLayout>

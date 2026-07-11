@@ -1,22 +1,8 @@
 ---
-import Navbar from "../components/Navbar.astro";
-import Footer from "../components/Footer.astro";
+import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<!doctype html>
-<html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Checkout | VapeZone</title>
-        <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2" />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400;600;700&display=swap"
-            rel="stylesheet"
-        />
-    </head>
-    <body>
-        <Navbar solid={true} />
+<BaseLayout title="Checkout | VapeZone" navbarSolid={true}>
 
         <main class="checkout-container">
             <div class="checkout-header">
@@ -167,12 +153,10 @@ import Footer from "../components/Footer.astro";
                 </div>
             </div>
         </main>
-        <Footer />
-    </body>
-</html>
+
 
 <script>
-    document.addEventListener("DOMContentLoaded", async () => {
+    document.addEventListener("astro:page-load", async () => {
         const token = localStorage.getItem("angel_token");
         if (!token) {
             window.location.href = "/login?redirect=checkout";
@@ -385,51 +369,6 @@ import Footer from "../components/Footer.astro";
             const selectedRadio = document.querySelector(
                 'input[name="payment_method"]:checked',
             ) as HTMLInputElement;
-            let finalNotes = notesValue;
-
-            // Detect if user provided an alternate shipping address
-            const altStreet = (
-                document.getElementById("street_address") as HTMLInputElement
-            )?.value;
-            const altExt = (
-                document.getElementById("exterior_number") as HTMLInputElement
-            )?.value;
-            const altNeigh = (
-                document.getElementById("neighborhood") as HTMLInputElement
-            )?.value;
-            const altState = (
-                document.getElementById("state") as HTMLInputElement
-            )?.value;
-            const altCity = (
-                document.getElementById("city") as HTMLInputElement
-            )?.value;
-            const altZip = (
-                document.getElementById("postal_code") as HTMLInputElement
-            )?.value;
-
-            if (
-                altStreet ||
-                altExt ||
-                altNeigh ||
-                altState ||
-                altCity ||
-                altZip
-            ) {
-                const altAddress = [
-                    altStreet,
-                    altExt,
-                    altNeigh,
-                    altCity,
-                    altState,
-                    altZip,
-                ]
-                    .filter(Boolean)
-                    .join(", ");
-                finalNotes += finalNotes
-                    ? `\nDirección alterna de envío: ${altAddress}`
-                    : `Dirección alterna de envío: ${altAddress}`;
-            }
-
             try {
                 // Procesar la orden
                 const payload = {
@@ -440,7 +379,7 @@ import Footer from "../components/Footer.astro";
                         quantity: item.quantity,
                     })),
                     shipping_cost: shippingCost,
-                    notes: finalNotes,
+                    notes: notesValue,
                 };
 
                 const res = await fetch(`${API_BASE_URL}/orders`, {
@@ -768,3 +707,4 @@ import Footer from "../components/Footer.astro";
         }
     }
 </style>
+</BaseLayout>

@@ -1,33 +1,46 @@
 ---
-import Navbar from '../../components/Navbar.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
 import ProductCard from '../../components/ProductCard.astro';
-import Footer from '../../components/Footer.astro';
 
-export async function getStaticPaths() {
-    const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
-    try {
-        const catRes = await fetch(`${API_BASE_URL}/categories?limit=1000`);
-        if (!catRes.ok) return [];
-        const catResult = await catRes.json();
-        if (!catResult.success || !catResult.data) return [];
-        const activeCategories = catResult.data
-            .filter((cat: any) => cat.is_active)
-            .sort((a: any, b: any) => a.display_order - b.display_order);
-        
-        return activeCategories.map((category: any) => ({
-            params: { id: category.id },
-            props: { category, allCategories: activeCategories },
-        }));
-    } catch (e) {
-        console.error("Error fetching categories for paths", e);
-        return [];
-    }
-}
-
-const { category, allCategories } = Astro.props;
+const { id } = Astro.params;
 const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
 
+// En modo SSR obtenemos la categoría directamente desde el ID de la URL
+let category: any = null;
+let allCategories: any[] = [];
 let products: any[] = [];
+
+try {
+    const catRes = await fetch(`${API_BASE_URL}/categories/${id}`);
+    if (catRes.ok) {
+        const catResult = await catRes.json();
+        if (catResult.success && catResult.data) {
+            category = catResult.data;
+        }
+    }
+} catch (e) {
+    console.error("Error fetching category", e);
+}
+
+// Si la categoría no existe, redirigir a inicio
+if (!category) {
+    return Astro.redirect('/');
+}
+
+try {
+    const allCatRes = await fetch(`${API_BASE_URL}/categories?limit=1000`);
+    if (allCatRes.ok) {
+        const allCatResult = await allCatRes.json();
+        if (allCatResult.success && allCatResult.data) {
+            allCategories = allCatResult.data
+                .filter((cat: any) => cat.is_active)
+                .sort((a: any, b: any) => a.display_order - b.display_order);
+        }
+    }
+} catch (e) {
+    console.error("Error fetching all categories", e);
+}
+
 try {
     const prodRes = await fetch(`${API_BASE_URL}/products?category_id=${category.id}&limit=100`);
     if (prodRes.ok) {
@@ -42,20 +55,7 @@ try {
     console.error("Error fetching products for category", e);
 }
 ---
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{category.name} | Ecommerce Angel</title>
-        <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2" />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
-            rel="stylesheet"
-        />
-    </head>
-    <body>
-        <Navbar solid={true} />
+<BaseLayout title={`${category.name} | Vapezone`} navbarSolid={true}>
         
         <div class="back-bar">
             <button class="back-btn" onclick="history.length > 1 ? history.back() : window.location.href = '/'">
@@ -126,10 +126,10 @@ try {
             </div>
         </main>
         
-        <Footer />
+
 
         <script>
-            document.addEventListener("DOMContentLoaded", () => {
+            document.addEventListener("astro:page-load", () => {
                 setTimeout(() => {
                     document.querySelectorAll('.reveal-item').forEach((el) => {
                         el.classList.add('is-visible');
@@ -239,9 +239,6 @@ try {
                 if(resetBtn) resetBtn.addEventListener('click', resetFilters);
             });
         </script>
-    </body>
-</html>
-
 <style>
     /* Back button */
     .back-bar {
@@ -533,9 +530,5 @@ try {
         padding: 0;
         box-sizing: border-box;
     }
-    body {
-        background-color: #000;
-        color: #fff;
-        font-family: "Inter", sans-serif;
-    }
 </style>
+</BaseLayout>

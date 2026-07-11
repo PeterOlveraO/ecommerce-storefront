@@ -1,22 +1,8 @@
 ---
-import Navbar from "../components/Navbar.astro";
-import Footer from "../components/Footer.astro";
+import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<!doctype html>
-<html lang="es">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Registro | Vapezone</title>
-        <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2" />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Inter:wght@300;400&display=swap"
-            rel="stylesheet"
-        />
-    </head>
-    <body>
-        <Navbar solid={true} />
+<BaseLayout title="Registro | Vapezone" navbarSolid={true}>
         <div class="auth-container">
             <div class="auth-card reveal-item">
                 <h1>CREAR CUENTA</h1>
@@ -84,7 +70,7 @@ import Footer from "../components/Footer.astro";
                         />
                     </div>
                     <div class="form-row">
-                        <div class="form-group half">
+                        <div class="form-group third">
                             <label for="street_address">Calle</label>
                             <input
                                 type="text"
@@ -94,14 +80,23 @@ import Footer from "../components/Footer.astro";
                                 placeholder="Av. Siempre Viva"
                             />
                         </div>
-                        <div class="form-group half">
-                            <label for="exterior_number">Núm Exterior</label>
+                        <div class="form-group third">
+                            <label for="exterior_number">Núm Ext</label>
                             <input
                                 type="text"
                                 id="exterior_number"
                                 name="exterior_number"
                                 required
                                 placeholder="123"
+                            />
+                        </div>
+                        <div class="form-group third">
+                            <label for="interior_number">Núm Int (Opc)</label>
+                            <input
+                                type="text"
+                                id="interior_number"
+                                name="interior_number"
+                                placeholder="B"
                             />
                         </div>
                     </div>
@@ -159,9 +154,9 @@ import Footer from "../components/Footer.astro";
                 </p>
             </div>
         </div>
-        <Footer />
+
         <script>
-            document.addEventListener("DOMContentLoaded", () => {
+            document.addEventListener("astro:page-load", () => {
                 const card = document.querySelector(".auth-card");
                 setTimeout(() => card?.classList.add("visible"), 100);
 
@@ -209,6 +204,11 @@ import Footer from "../components/Footer.astro";
                             "exterior_number",
                         ) as HTMLInputElement
                     ).value;
+                    const interior_number = (
+                        document.getElementById(
+                            "interior_number",
+                        ) as HTMLInputElement
+                    ).value;
                     const neighborhood = (
                         document.getElementById(
                             "neighborhood",
@@ -233,6 +233,7 @@ import Footer from "../components/Footer.astro";
                         last_name,
                         street_address,
                         exterior_number,
+                        interior_number,
                         neighborhood,
                         postal_code,
                         city,
@@ -279,8 +280,7 @@ import Footer from "../components/Footer.astro";
                 });
             });
         </script>
-    </body>
-</html>
+
 
 <style is:global>
     body {
@@ -453,3 +453,4 @@ import Footer from "../components/Footer.astro";
         text-decoration: underline;
     }
 </style>
+</BaseLayout>
