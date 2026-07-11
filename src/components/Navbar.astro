@@ -45,7 +45,7 @@ try {
     <nav class="nav-center">
         <a href="/faq">FAQ</a>
         <a href="/terms">Términos</a>
-        <a href="https://discord.gg/38QFybEmZs">Discord</a>
+        <a href="https://discord.gg/Sz52VSMPP">Discord</a>
     </nav>
 
     <!-- ZONA DERECHA: ACCIONES -->
@@ -151,8 +151,13 @@ try {
         // Sync badge on load directly from localStorage (handles page refresh)
         if (badge) {
             try {
-                const savedCart = JSON.parse(localStorage.getItem("angel_cart") || "[]");
-                const count = savedCart.reduce((sum: number, item: any) => sum + item.quantity, 0);
+                const savedCart = JSON.parse(
+                    localStorage.getItem("angel_cart") || "[]",
+                );
+                const count = savedCart.reduce(
+                    (sum: number, item: any) => sum + item.quantity,
+                    0,
+                );
                 if (count > 0) badge.textContent = `(${count})`;
             } catch (e) {}
         }
