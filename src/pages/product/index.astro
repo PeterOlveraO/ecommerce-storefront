@@ -1,0 +1,139 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ProductPage from "../../components/ProductPage.jsx";
+---
+
+<BaseLayout title="Producto | Vapezone" navbarSolid={true}>
+
+  <div class="back-bar">
+    <button
+      class="back-btn"
+      onclick="history.length > 1 ? history.back() : window.location.href = '/'"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M19 12H5M12 5l-7 7 7 7"></path>
+      </svg>
+      Regresar
+    </button>
+  </div>
+
+  <!-- ProductPage se hidrata en el cliente y carga todo vía fetch -->
+  <ProductPage client:only="react" />
+
+</BaseLayout>
+
+<style is:global>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background-color: #000; color: #fff; font-family: "Inter", sans-serif; overflow-x: hidden; }
+  h1, h2, h3 { font-family: "Oswald", sans-serif; text-transform: uppercase; }
+
+  /* ── Back bar ── */
+  .back-bar { padding: 1.5rem 5%; max-width: 1400px; margin: 0 auto; }
+  .back-btn { display: inline-flex; align-items: center; gap: 0.5rem; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); padding: 0.55rem 1.1rem; border-radius: 6px; font-family: "Inter", sans-serif; font-size: 0.9rem; cursor: pointer; transition: all 0.25s ease; letter-spacing: 0.3px; }
+  .back-btn:hover { border-color: rgba(255,255,255,0.5); color: #fff; background: rgba(255,255,255,0.05); transform: translateX(-2px); }
+
+  /* ── Product page layout ── */
+  .product-page { padding: 1rem 5% 4rem; max-width: 1400px; margin: 0 auto; min-height: 60vh; display: flex; align-items: center; }
+  .product-container { display: flex; flex-direction: column; gap: 4rem; width: 100%; }
+  @media (min-width: 900px) {
+    .product-container { flex-direction: row; align-items: center; }
+    .product-image-col, .product-info-col { flex: 1; }
+  }
+
+  /* ── Image column ── */
+  .product-image-col { position: relative; }
+  .image-wrapper { position: relative; background: rgba(255,255,255,0.03); border-radius: 12px; overflow: hidden; aspect-ratio: 4/5; display: flex; align-items: center; justify-content: center; }
+  .image-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s ease; }
+
+  .gallery-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: all 0.3s ease; backdrop-filter: blur(4px); }
+  .image-wrapper:hover .gallery-nav { opacity: 1; }
+  .gallery-nav:hover { background: rgba(255,255,255,0.2); transform: translateY(-50%) scale(1.1); }
+  .gallery-nav.prev { left: 10px; }
+  .gallery-nav.next { right: 10px; }
+
+  .sale-badge { position: absolute; top: 20px; left: 20px; background: #fff; color: #000; padding: 6px 12px; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; border-radius: 2px; z-index: 10; font-family: "Oswald", sans-serif; }
+
+  .product-gallery { display: flex; gap: 1rem; margin-top: 1rem; overflow-x: auto; padding-bottom: 0.5rem; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent; }
+  .product-gallery::-webkit-scrollbar { height: 6px; }
+  .product-gallery::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+  .gallery-thumbnail { flex: 0 0 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 2px solid transparent; cursor: pointer; background: rgba(255,255,255,0.03); transition: all 0.3s ease; padding: 0; }
+  .gallery-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
+  .gallery-thumbnail:hover { border-color: rgba(255,255,255,0.5); }
+  .gallery-thumbnail.active { border-color: #fff; }
+
+  /* ── Info column ── */
+  .product-info-col { display: flex; flex-direction: column; gap: 1.5rem; }
+  .brand { font-size: 1.2rem; letter-spacing: 3px; opacity: 0.6; margin-bottom: -1rem; font-family: "Oswald", sans-serif; text-transform: uppercase; }
+  .title { font-size: 3.5rem; line-height: 1.1; margin-bottom: 0.5rem; font-family: "Oswald", sans-serif; text-transform: uppercase; }
+
+  .price-container { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1rem; }
+  .current-price { font-size: 2.5rem; font-weight: 700; font-family: "Oswald", sans-serif; }
+  .original-price { font-size: 1.5rem; text-decoration: line-through; opacity: 0.5; }
+  .description { font-size: 1.1rem; line-height: 1.8; opacity: 0.8; margin-bottom: 1rem; }
+
+  /* ── Variants ── */
+  .product-variants { margin-bottom: 2rem; }
+  .variants-title { font-size: 1.1rem; margin-bottom: 1rem; font-weight: 600; }
+  .variants-grid { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+  .variant-btn { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 0.8rem 1.2rem; border-radius: 6px; font-family: "Inter", sans-serif; font-size: 0.95rem; cursor: pointer; transition: all 0.3s ease; }
+  .variant-btn:hover:not(.disabled) { border-color: #fff; background: rgba(255,255,255,0.1); }
+  .variant-btn.selected { border-color: #fff; background: #fff; color: #000; font-weight: 600; }
+  .variant-btn.disabled { opacity: 0.3; cursor: not-allowed; text-decoration: line-through; }
+
+  /* ── Add to cart ── */
+  .add-to-cart-btn { background: #fff; color: #000; border: none; padding: 1.5rem 3rem; font-size: 1.2rem; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: transform 0.3s ease, background 0.3s ease; border-radius: 4px; width: 100%; max-width: 400px; font-family: "Oswald", sans-serif; text-transform: uppercase; }
+  .add-to-cart-btn:hover { transform: translateY(-3px); background: #f0f0f0; }
+
+  /* ── Product specs ── */
+  .product-details { margin-bottom: 2rem; background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+  .details-title { font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 1.2rem; margin-bottom: 1rem; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
+  .details-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+  .details-list li { display: flex; justify-content: space-between; font-size: 0.95rem; }
+  .detail-key { opacity: 0.7; font-weight: 300; }
+  .detail-value { font-weight: 400; text-align: right; }
+
+  /* ── Related products ── */
+  .related-wrapper { padding: 0 0 5rem 0; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 2rem; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 0 5%; }
+  .store-section { padding: 4rem 0 0 0; }
+  .category-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 1rem; }
+  .section-title { font-size: 2.5rem; letter-spacing: 2px; font-family: "Oswald", sans-serif; text-transform: uppercase; }
+  .category-link { font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; opacity: 0.7; text-decoration: none; color: #fff; transition: opacity 0.3s; margin-bottom: 0.5rem; }
+  .category-link:hover { opacity: 1; }
+
+  /* ── Product cards (related) ── */
+  .products-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+  @media (min-width: 768px) { .products-grid { grid-template-columns: repeat(4, 1fr); } }
+
+  .product-card { display: flex; flex-direction: column; text-decoration: none; color: #fff; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden; transition: transform 0.3s ease, border-color 0.3s ease; }
+  .product-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.15); }
+  .product-image-wrapper { position: relative; aspect-ratio: 1/1; overflow: hidden; background: #111; }
+  .product-image-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+  .product-card:hover .product-image-wrapper img { transform: scale(1.05); }
+  .product-badge { position: absolute; top: 10px; left: 10px; background: #fff; color: #000; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 3px 8px; border-radius: 2px; z-index: 2; font-family: "Oswald", sans-serif; }
+  .product-info { padding: 1rem; display: flex; flex-direction: column; gap: 0.25rem; }
+  .product-brand { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; }
+  .product-name { font-size: 1rem; line-height: 1.3; font-family: "Oswald", sans-serif; text-transform: uppercase; }
+  .product-price-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; }
+  .product-price { font-family: "Oswald", sans-serif; font-size: 1.2rem; font-weight: 700; }
+  .product-original-price { font-size: 0.85rem; text-decoration: line-through; opacity: 0.4; }
+
+  /* ── Skeleton ── */
+  @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+  .skeleton-img { flex: 1; aspect-ratio: 4/5; background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px; min-height: 300px; }
+  .skeleton-info { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+  .skeleton-line { background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; height: 1.5rem; }
+  .skeleton-line.short { width: 40%; }
+  .skeleton-line.medium { width: 60%; }
+  .skeleton-line.long { width: 90%; }
+
+  /* ── Error ── */
+  .full-error { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 4rem; text-align: center; background: rgba(255,50,50,0.05); border: 1px solid rgba(255,50,50,0.2); border-radius: 8px; margin: 2rem 5%; }
+  .full-error button { background: #fff; color: #000; border: none; padding: 0.75rem 2rem; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; border-radius: 4px; transition: background 0.3s; }
+  .full-error button:hover { background: #e0e0e0; }
+
+  /* ── Reveal ── */
+  .reveal-item { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .reveal-item.is-visible { opacity: 1; transform: translateY(0); }
+</style>
