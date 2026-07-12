@@ -152,7 +152,7 @@ try {
         if (badge) {
             try {
                 const savedCart = JSON.parse(
-                    localStorage.getItem("angel_cart") || "[]",
+                    localStorage.getItem("vz_cart") || "[]",
                 );
                 const count = savedCart.reduce(
                     (sum: number, item: any) => sum + item.quantity,
@@ -170,7 +170,7 @@ try {
         const logoutBtn = document.getElementById("logout-btn");
         const registerBtn = document.getElementById("nav-register-btn");
 
-        const userStr = localStorage.getItem("angel_user");
+        const userStr = localStorage.getItem("vz_user");
         if (userStr) {
             try {
                 const user = JSON.parse(userStr);
@@ -202,8 +202,8 @@ try {
         });
 
         logoutBtn?.addEventListener("click", () => {
-            localStorage.removeItem("angel_user");
-            localStorage.removeItem("angel_token");
+            localStorage.removeItem("vz_user");
+            localStorage.removeItem("vz_token");
             window.location.reload();
         });
 
@@ -247,8 +247,8 @@ try {
                     .getElementById("sidebar-logout-btn")
                     ?.addEventListener("click", (e) => {
                         e.preventDefault();
-                        localStorage.removeItem("angel_user");
-                        localStorage.removeItem("angel_token");
+                        localStorage.removeItem("vz_user");
+                        localStorage.removeItem("vz_token");
                         window.location.reload();
                     });
             } catch (e) {}

@@ -157,7 +157,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
 <script>
     document.addEventListener("astro:page-load", async () => {
-        const token = localStorage.getItem("angel_token");
+        const token = localStorage.getItem("vz_token");
         if (!token) {
             window.location.href = "/login?redirect=checkout";
             return;
@@ -165,7 +165,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
         const API_BASE_URL =
             import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
-        let cart = JSON.parse(localStorage.getItem("angel_cart") || "[]");
+        let cart = JSON.parse(localStorage.getItem("vz_cart") || "[]");
 
         if (cart.length === 0) {
             window.location.href = "/";
@@ -237,6 +237,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
                 const res = await fetch(`${API_BASE_URL}/me`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
+                if (res.status === 401) {
+                    alert("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+                    localStorage.removeItem("vz_token");
+                    localStorage.removeItem("vz_user");
+                    window.location.href = "/login";
+                    return;
+                }
                 if (res.ok) {
                     const data = await res.json();
                     if (data.success && data.data) {
@@ -391,6 +398,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
                     body: JSON.stringify(payload),
                 });
 
+                if (res.status === 401) {
+                    alert("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+                    localStorage.removeItem("vz_token");
+                    localStorage.removeItem("vz_user");
+                    window.location.href = "/login";
+                    return;
+                }
+
                 const result = await res.json();
 
                 if (res.ok && result.success) {
@@ -398,7 +413,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
                         msgEl.textContent = `¡Compra Exitosa! Redirigiendo...`;
                         msgEl.style.color = "#4caf50";
                     }
-                    localStorage.removeItem("angel_cart"); // Limpiar carrito
+                    localStorage.removeItem("vz_cart"); // Limpiar carrito
 
                     // Disparar evento para que se actualice la UI del carrito si es necesario
                     document.dispatchEvent(

@@ -37,7 +37,7 @@
         const checkoutBtn = document.getElementById("checkout-btn");
         const checkoutMsg = document.getElementById("checkout-message");
         
-        let cart = JSON.parse(localStorage.getItem('angel_cart') || '[]');
+        let cart = JSON.parse(localStorage.getItem('vz_cart') || '[]');
         
         // Expose toggle globally so Navbar or Add to Cart buttons can open it
         window.toggleCart = (forceOpen = false) => {
@@ -81,7 +81,7 @@
         }
 
         function saveCart() {
-            localStorage.setItem('angel_cart', JSON.stringify(cart));
+            localStorage.setItem('vz_cart', JSON.stringify(cart));
             updateCartBadge();
         }
 
@@ -181,7 +181,7 @@
                 return;
             }
 
-            const user = localStorage.getItem('angel_user');
+            const user = localStorage.getItem('vz_user');
             if (!user) {
                 window.location.href = '/login?redirect=checkout';
                 return;

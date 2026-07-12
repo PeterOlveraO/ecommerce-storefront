@@ -54,11 +54,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
                             if(msg) { msg.textContent = 'Acceso concedido. Redirigiendo...'; msg.className = 'auth-message success'; }
                             // El backend retorna data.data.access_token según la guía
                             const token = data.data?.access_token || data.access_token || data.token;
-                            localStorage.setItem('angel_token', token);
+                            localStorage.setItem('vz_token', token);
                             
                             // Guardamos los datos del usuario extraídos de la respuesta del login
                             const user = data.data?.user || { email: identifier, role: 'customer' };
-                            localStorage.setItem('angel_user', JSON.stringify(user));
+                            localStorage.setItem('vz_user', JSON.stringify(user));
 
                             setTimeout(() => {
                                 const urlParams = new URLSearchParams(window.location.search);
