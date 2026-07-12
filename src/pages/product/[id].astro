@@ -1,505 +1,279 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import ProductCard from "../../components/ProductCard.astro";
 
-const { id } = Astro.params;
-const API_BASE_URL =
-    import.meta.env.PUBLIC_API_URL || "http://localhost:3000";
-
-// En modo SSR obtenemos el producto directamente desde el ID de la URL
-let fullProduct: any = null;
-let relatedProducts: any[] = [];
-let categoryId: string | null = null;
-
-try {
-    const res = await fetch(`${API_BASE_URL}/products/${id}`);
-    if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data) {
-            fullProduct = json.data;
-
-            // Sacar el category_id desde las categorías que ya devuelve /products/:id
-            const cats = fullProduct.categories;
-
-            const parsedCats =
-                typeof cats === "string" ? JSON.parse(cats) : cats;
-
-            if (Array.isArray(parsedCats) && parsedCats.length > 0) {
-                categoryId = parsedCats[0]?.id ?? null;
-            }
-
-            // Fetch productos de la misma categoría
-            if (categoryId) {
-                try {
-                    const relRes = await fetch(
-                        `${API_BASE_URL}/products?category_id=${categoryId}&limit=5`,
-                    );
-                    if (relRes.ok) {
-                        const relJson = await relRes.json();
-                        if (relJson.success && relJson.data) {
-                            relatedProducts = relJson.data
-                                .filter(
-                                    (p: any) =>
-                                        String(p.id) !==
-                                        String(id),
-                                )
-                                .slice(0, 4);
-                        }
-                    }
-                } catch (e) {
-                    console.error("Error fetching related products", e);
-                }
-            }
-        }
-    }
-} catch (e) {
-    console.error("Error fetching full product details", e);
-}
-
-// Si el producto no existe, redirigir a inicio
-if (!fullProduct) {
-    return Astro.redirect('/');
-}
-
-const product = fullProduct;
-
-let productDetails = null;
-if (product.details) {
-    try {
-        productDetails =
-            typeof product.details === "string"
-                ? JSON.parse(product.details)
-                : product.details;
-    } catch (e) {
-        console.error("Could not parse product details", e);
-    }
-}
-
-const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
-
-// Preparar imágenes de la galería
-const allImages: string[] = [];
-const getFullUrl = (url: string) => {
-    if (!url) return "";
-    if (url.startsWith("http")) return url;
-    return `${API_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
-};
-
-if (product.image_url) {
-    allImages.push(getFullUrl(product.image_url));
-}
-if (Array.isArray(product.images)) {
-    product.images.forEach((img: string) => {
-        if (img) allImages.push(getFullUrl(img));
-    });
+// En modo estático necesitamos exportar getStaticPaths.
+// Retornamos vacío porque el ID se lee desde window.location.pathname en el cliente.
+export function getStaticPaths() {
+  return [];
 }
 ---
 
-<BaseLayout title={`${fullProduct?.name ?? 'Producto'} | Vapezone`} navbarSolid={true}>
+<BaseLayout title="Producto | Vapezone" navbarSolid={true}>
 
-        <div class="back-bar">
-            <button
-                id="back-btn"
-                class="back-btn"
-                onclick="history.length > 1 ? history.back() : window.location.href = '/'"
-            >
-                <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.5"
-                >
-                    <path d="M19 12H5M12 5l-7 7 7 7"></path>
-                </svg>
-                Regresar
-            </button>
+    <div class="back-bar">
+        <button id="back-btn" class="back-btn" onclick="history.length > 1 ? history.back() : window.location.href = '/'">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M19 12H5M12 5l-7 7 7 7"></path>
+            </svg>
+            Regresar
+        </button>
+    </div>
+
+    <!-- Skeleton -->
+    <div id="product-skeleton" class="product-page">
+        <div class="product-container">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-info">
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line long"></div>
+                <div class="skeleton-line medium"></div>
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line long" style="height:3rem;margin-top:1rem;"></div>
+            </div>
         </div>
+    </div>
 
-        <main class="product-page">
-            <div class="product-container">
-                <div class="product-image-col reveal-item">
-                    <div class="image-wrapper">
-                        {
-                            product.sale_price &&
-                                parseFloat(product.sale_price) <
-                                    parseFloat(product.price) && (
-                                    <span class="sale-badge">Oferta</span>
-                                )
-                        }
-                        <img
-                            id="main-product-image"
-                            src={allImages.length > 0
-                                ? allImages[0]
-                                : product.image_url}
-                            alt={product.name}
-                        />
+    <!-- Error state -->
+    <div id="product-error" style="display:none;" class="full-error">
+        <p>⚠️ No se pudo cargar este producto.</p>
+        <button onclick="window.location.href='/'">Ir al inicio</button>
+    </div>
 
-                        {
-                            allImages.length > 1 && (
-                                <>
-                                    <button
-                                        type="button"
-                                        class="gallery-nav prev"
-                                        aria-label="Anterior imagen"
-                                    >
-                                        <svg
-                                            width="24"
-                                            height="24"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                        >
-                                            <path d="M15 18l-6-6 6-6" />
-                                        </svg>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="gallery-nav next"
-                                        aria-label="Siguiente imagen"
-                                    >
-                                        <svg
-                                            width="24"
-                                            height="24"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                        >
-                                            <path d="M9 18l6-6-6-6" />
-                                        </svg>
-                                    </button>
-                                </>
-                            )
-                        }
-                    </div>
-
-                    {
-                        allImages.length > 1 && (
-                            <div class="product-gallery">
-                                {allImages.map((img: string, index: number) => (
-                                    <button
-                                        type="button"
-                                        class={`gallery-thumbnail ${index === 0 ? "active" : ""}`}
-                                        data-image={img}
-                                        aria-label={`Ver imagen ${index + 1}`}
-                                    >
-                                        <img
-                                            src={img}
-                                            alt={`${product.name} - Vista ${index + 1}`}
-                                            loading="lazy"
-                                        />
-                                    </button>
-                                ))}
-                            </div>
-                        )
-                    }
-                </div>
-
-                <div class="product-info-col reveal-item">
-                    <p class="brand">{product.brand}</p>
-                    <h1 class="title">{product.name}</h1>
-
-                    <div class="price-container">
-                        {
-                            product.sale_price &&
-                            parseFloat(product.sale_price) <
-                                parseFloat(product.price) ? (
-                                <>
-                                    <span class="current-price">
-                                        ${product.sale_price}
-                                    </span>
-                                    <span class="original-price">
-                                        ${product.price}
-                                    </span>
-                                </>
-                            ) : (
-                                <span class="current-price">
-                                    ${product.price}
-                                </span>
-                            )
-                        }
-                    </div>
-
-                    <div class="description">
-                        <p>{product.description}</p>
-                    </div>
-
-                    {
-                        activeVariants.length > 0 && (
-                            <div class="product-variants">
-                                <h3 class="variants-title">
-                                    Selecciona una opción:
-                                </h3>
-                                <div
-                                    class="variants-grid"
-                                    id="variants-container"
-                                >
-                                    {activeVariants.map((variant: any) => {
-                                        const isOutOfStock =
-                                            variant.stock === 0;
-                                        return (
-                                            <button
-                                                class={`variant-btn ${isOutOfStock ? "disabled" : ""}`}
-                                                data-id={variant.id}
-                                                data-name={
-                                                    variant.variante1 +
-                                                    (variant.variante2
-                                                        ? ` - ${variant.variante2}`
-                                                        : "")
-                                                }
-                                                data-stock={variant.stock}
-                                                disabled={isOutOfStock}
-                                            >
-                                                {variant.variante1}
-                                                {variant.variante2 &&
-                                                    ` - ${variant.variante2}`}
-                                                {isOutOfStock && " (Agotado)"}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                <p
-                                    id="variant-error"
-                                    class="variant-error"
-                                    style="display: none; color: #ff4d4d; margin-top: 10px;"
-                                >
-                                    Por favor, selecciona una opción antes de
-                                    añadir al carrito.
-                                </p>
-                            </div>
-                        )
-                    }
-
-                    {
-                        productDetails &&
-                            Object.keys(productDetails).length > 0 && (
-                                <div class="product-details">
-                                    <h3 class="details-title">
-                                        Especificaciones
-                                    </h3>
-                                    <ul class="details-list">
-                                        {Object.entries(productDetails).map(
-                                            ([key, value]) => (
-                                                <li>
-                                                    <span class="detail-key">
-                                                        {key}:
-                                                    </span>
-                                                    <span class="detail-value">
-                                                        {value}
-                                                    </span>
-                                                </li>
-                                            ),
-                                        )}
-                                    </ul>
-                                </div>
-                            )
-                    }
-
-                    <button
-                        id="add-to-cart-btn"
-                        class="add-to-cart-btn"
-                        data-product={JSON.stringify({
-                            id: product.id,
-                            name: product.name,
-                            brand: product.brand,
-                            price:
-                                product.sale_price &&
-                                parseFloat(product.sale_price) <
-                                    parseFloat(product.price)
-                                    ? product.sale_price
-                                    : product.price,
-                            image_url: product.image_url,
-                            stock: product.stock,
-                        })}
-                    >
-                        AÑADIR AL CARRITO
+    <!-- Real product content -->
+    <main class="product-page" id="product-content" style="display:none;">
+        <div class="product-container">
+            <!-- Image Column -->
+            <div class="product-image-col reveal-item">
+                <div class="image-wrapper">
+                    <span class="sale-badge" id="sale-badge" style="display:none;">Oferta</span>
+                    <img id="main-product-image" src="" alt="" />
+                    <button type="button" class="gallery-nav prev" id="gallery-prev" aria-label="Anterior imagen" style="display:none;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" /></svg>
+                    </button>
+                    <button type="button" class="gallery-nav next" id="gallery-next" aria-label="Siguiente imagen" style="display:none;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6" /></svg>
                     </button>
                 </div>
+                <div class="product-gallery" id="product-gallery"></div>
             </div>
-        </main>
 
-        {
-            relatedProducts.length > 0 && (
-                <div class="related-wrapper container">
-                    <section class="store-section reveal-on-scroll">
-                        <div class="category-header reveal-item">
-                            <h2 class="section-title">
-                                También te puede gustar
-                            </h2>
-                            <a
-                                href={`/category/${categoryId}`}
-                                class="category-link"
-                            >
-                                Ver todo{" "}
-                                <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                >
-                                    <path d="M5 12h14M12 5l7 7-7 7" />
-                                </svg>
-                            </a>
-                        </div>
-                        <div class="products-grid">
-                            {relatedProducts.map((rp: any, index: number) => (
-                                <ProductCard product={rp} index={index} />
-                            ))}
-                        </div>
-                    </section>
+            <!-- Info Column -->
+            <div class="product-info-col reveal-item" style="transition-delay:0.15s;">
+                <p class="brand" id="product-brand"></p>
+                <h1 class="title" id="product-title"></h1>
+
+                <div class="price-container" id="price-container"></div>
+
+                <div class="description" id="product-description"></div>
+
+                <div class="product-variants" id="variants-section" style="display:none;">
+                    <h3 class="variants-title">Selecciona una opción:</h3>
+                    <div class="variants-grid" id="variants-container"></div>
+                    <p id="variant-error" class="variant-error" style="display:none;color:#ff4d4d;margin-top:10px;">
+                        Por favor, selecciona una opción antes de añadir al carrito.
+                    </p>
                 </div>
-            )
+
+                <div class="product-details" id="product-details" style="display:none;">
+                    <h3 class="details-title">Especificaciones</h3>
+                    <ul class="details-list" id="details-list"></ul>
+                </div>
+
+                <button id="add-to-cart-btn" class="add-to-cart-btn">
+                    AÑADIR AL CARRITO
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Related products -->
+    <div class="related-wrapper container" id="related-section" style="display:none;">
+        <section class="store-section reveal-on-scroll">
+            <div class="category-header reveal-item">
+                <h2 class="section-title">También te puede gustar</h2>
+                <a href="/" class="category-link" id="related-category-link">
+                    Ver todo
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+            <div class="products-grid" id="related-grid"></div>
+        </section>
+    </div>
+
+    <script>
+        const API_BASE_URL = "https://api.vapezone.com.mx";
+
+        function getProductIdFromUrl(): string | null {
+            const parts = window.location.pathname.split("/");
+            const idx = parts.indexOf("product");
+            if (idx !== -1 && parts[idx + 1]) return parts[idx + 1];
+            return null;
         }
 
+        function getFullUrl(url: string): string {
+            if (!url) return "";
+            if (url.startsWith("http")) return url;
+            return `${API_BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+        }
 
+        async function initProductPage() {
+            const skeleton = document.getElementById("product-skeleton");
+            const productError = document.getElementById("product-error");
+            const content = document.getElementById("product-content");
 
-        <script>
-            // Reveal animation — igual que index.astro
-            document.addEventListener("astro:page-load", () => {
-                // Animar los .reveal-item del producto inmediatamente
-                setTimeout(() => {
-                    document
-                        .querySelectorAll(".product-page .reveal-item")
-                        .forEach((el, index) => {
-                            setTimeout(() => {
-                                el.classList.add("is-visible");
-                            }, index * 200);
-                        });
-                }, 100);
+            const productId = getProductIdFromUrl();
+            if (!productId) { window.location.href = "/"; return; }
 
-                // Animar la sección de productos relacionados con IntersectionObserver
-                // (igual que index.astro)
-                // Animar la sección de productos relacionados con IntersectionObserver
-                const observer = new IntersectionObserver(
-                    (entries, obs) => {
-                        entries.forEach((entry) => {
-                            if (entry.isIntersecting) {
-                                entry.target.classList.add("is-visible");
-                                // Añadir is-visible directamente a cada hijo con stagger
-                                entry.target
-                                    .querySelectorAll(".reveal-item")
-                                    .forEach((item, i) => {
-                                        setTimeout(() => {
-                                            (item as HTMLElement).classList.add(
-                                                "is-visible",
-                                            );
-                                        }, i * 150);
-                                    });
-                                obs.unobserve(entry.target);
-                            }
-                        });
-                    },
-                    {
-                        root: null,
-                        rootMargin: "0px 0px -80px 0px",
-                        threshold: 0.05,
-                    },
-                );
-                document.querySelectorAll(".reveal-on-scroll").forEach((el) => {
-                    observer.observe(el);
-                });
+            try {
+                const res = await fetch(`${API_BASE_URL}/products/${productId}`);
+                if (!res.ok) throw new Error("product not found");
 
-                // Lógica de Galería de Imágenes
-                const mainImage = document.getElementById(
-                    "main-product-image",
-                ) as HTMLImageElement;
-                const thumbnails =
-                    document.querySelectorAll(".gallery-thumbnail");
-                const prevBtn = document.querySelector(".gallery-nav.prev");
-                const nextBtn = document.querySelector(".gallery-nav.next");
-                let currentImageIndex = 0;
-                let autoSlideInterval: number | undefined;
+                const json = await res.json();
+                if (!json.success || !json.data) { window.location.href = "/"; return; }
 
-                if (mainImage && thumbnails.length > 1) {
+                const product = json.data;
+
+                // Update browser title
+                document.title = `${product.name} | Vapezone`;
+
+                // Parse categories to get categoryId for related products
+                let categoryId: string | null = null;
+                const cats = product.categories;
+                const parsedCats = typeof cats === "string" ? JSON.parse(cats) : cats;
+                if (Array.isArray(parsedCats) && parsedCats.length > 0) {
+                    categoryId = parsedCats[0]?.id ?? null;
+                }
+
+                // Build images array
+                const allImages: string[] = [];
+                if (product.image_url) allImages.push(getFullUrl(product.image_url));
+                if (Array.isArray(product.images)) {
+                    product.images.forEach((img: string) => { if (img) allImages.push(getFullUrl(img)); });
+                }
+
+                // Parse product details
+                let productDetails: any = null;
+                if (product.details) {
+                    try {
+                        productDetails = typeof product.details === "string" ? JSON.parse(product.details) : product.details;
+                    } catch {}
+                }
+
+                const activeVariants = (product.variants || []).filter((v: any) => v.is_active);
+
+                // --- Populate DOM ---
+                const brandEl = document.getElementById("product-brand");
+                const titleEl = document.getElementById("product-title");
+                const priceContainer = document.getElementById("price-container");
+                const descEl = document.getElementById("product-description");
+                const saleBadge = document.getElementById("sale-badge");
+                const mainImg = document.getElementById("main-product-image") as HTMLImageElement;
+                const gallery = document.getElementById("product-gallery");
+                const galleryPrev = document.getElementById("gallery-prev");
+                const galleryNext = document.getElementById("gallery-next");
+                const variantsSection = document.getElementById("variants-section");
+                const variantsContainer = document.getElementById("variants-container");
+                const variantError = document.getElementById("variant-error");
+                const productDetailsSection = document.getElementById("product-details");
+                const detailsList = document.getElementById("details-list");
+                const addToCartBtn = document.getElementById("add-to-cart-btn") as HTMLButtonElement;
+
+                if (brandEl) brandEl.textContent = product.brand || "";
+                if (titleEl) titleEl.textContent = product.name;
+
+                const hasDiscount = product.sale_price && parseFloat(product.sale_price) < parseFloat(product.price);
+                if (priceContainer) {
+                    priceContainer.innerHTML = hasDiscount
+                        ? `<span class="current-price">$${product.sale_price}</span><span class="original-price">$${product.price}</span>`
+                        : `<span class="current-price">$${product.price}</span>`;
+                }
+
+                if (descEl) descEl.innerHTML = `<p>${product.description || ""}</p>`;
+                if (saleBadge) saleBadge.style.display = hasDiscount ? "block" : "none";
+
+                // Main image
+                if (mainImg && allImages.length > 0) {
+                    mainImg.src = allImages[0];
+                    mainImg.alt = product.name;
+                }
+
+                // Gallery thumbnails
+                if (gallery && allImages.length > 1) {
+                    gallery.innerHTML = allImages.map((img, i) => `
+                        <button type="button" class="gallery-thumbnail ${i === 0 ? "active" : ""}" data-image="${img}" aria-label="Ver imagen ${i + 1}">
+                            <img src="${img}" alt="${product.name} - Vista ${i + 1}" loading="lazy" />
+                        </button>
+                    `).join("");
+
+                    // Gallery nav
+                    if (galleryPrev) galleryPrev.style.display = "flex";
+                    if (galleryNext) galleryNext.style.display = "flex";
+
+                    let currentImageIndex = 0;
+                    let autoSlideInterval: number | undefined;
+                    const thumbnails = gallery.querySelectorAll(".gallery-thumbnail");
+
                     const updateImage = (index: number) => {
-                        thumbnails.forEach((t) => t.classList.remove("active"));
+                        thumbnails.forEach(t => t.classList.remove("active"));
                         thumbnails[index].classList.add("active");
-                        const newSrc =
-                            thumbnails[index].getAttribute("data-image");
-                        if (newSrc) {
-                            mainImage.style.opacity = "0.7";
-                            setTimeout(() => {
-                                mainImage.src = newSrc;
-                                mainImage.style.opacity = "1";
-                            }, 150);
+                        const newSrc = thumbnails[index].getAttribute("data-image");
+                        if (newSrc && mainImg) {
+                            mainImg.style.opacity = "0.7";
+                            setTimeout(() => { mainImg.src = newSrc; mainImg.style.opacity = "1"; }, 150);
                         }
                         currentImageIndex = index;
                     };
 
-                    const nextImage = () => {
-                        let nextIndex = currentImageIndex + 1;
-                        if (nextIndex >= thumbnails.length) nextIndex = 0;
-                        updateImage(nextIndex);
-                    };
+                    const nextImg = () => { let n = currentImageIndex + 1; if (n >= thumbnails.length) n = 0; updateImage(n); };
+                    const prevImg = () => { let p = currentImageIndex - 1; if (p < 0) p = thumbnails.length - 1; updateImage(p); };
+                    const startAutoSlide = () => { clearInterval(autoSlideInterval); autoSlideInterval = window.setInterval(nextImg, 4000); };
 
-                    const prevImage = () => {
-                        let prevIndex = currentImageIndex - 1;
-                        if (prevIndex < 0) prevIndex = thumbnails.length - 1;
-                        updateImage(prevIndex);
-                    };
-
-                    const startAutoSlide = () => {
-                        clearInterval(autoSlideInterval);
-                        autoSlideInterval = window.setInterval(nextImage, 4000);
-                    };
-
-                    thumbnails.forEach((thumb, index) => {
-                        thumb.addEventListener("click", () => {
-                            updateImage(index);
-                            startAutoSlide(); // Reiniciar timer
-                        });
+                    thumbnails.forEach((thumb, i) => {
+                        thumb.addEventListener("click", () => { updateImage(i); startAutoSlide(); });
                     });
 
-                    if (prevBtn) {
-                        prevBtn.addEventListener("click", (e) => {
-                            e.preventDefault();
-                            prevImage();
-                            startAutoSlide();
-                        });
-                    }
+                    if (galleryPrev) galleryPrev.addEventListener("click", (e) => { e.preventDefault(); prevImg(); startAutoSlide(); });
+                    if (galleryNext) galleryNext.addEventListener("click", (e) => { e.preventDefault(); nextImg(); startAutoSlide(); });
 
-                    if (nextBtn) {
-                        nextBtn.addEventListener("click", (e) => {
-                            e.preventDefault();
-                            nextImage();
-                            startAutoSlide();
-                        });
-                    }
-
-                    // Pausar al hacer hover en la imagen principal
-                    const imageWrapper =
-                        document.querySelector(".image-wrapper");
+                    const imageWrapper = document.querySelector(".image-wrapper");
                     if (imageWrapper) {
-                        imageWrapper.addEventListener("mouseenter", () =>
-                            clearInterval(autoSlideInterval),
-                        );
-                        imageWrapper.addEventListener(
-                            "mouseleave",
-                            startAutoSlide,
-                        );
+                        imageWrapper.addEventListener("mouseenter", () => clearInterval(autoSlideInterval));
+                        imageWrapper.addEventListener("mouseleave", startAutoSlide);
                     }
 
                     startAutoSlide();
                 }
 
-                // Variant Selection Logic
-                let selectedVariantId = null;
-                let selectedVariantName = null;
-                const hasVariants =
-                    document.querySelectorAll(".variant-btn").length > 0;
-                const variantBtns = document.querySelectorAll(".variant-btn");
-                const variantError = document.getElementById("variant-error");
+                // Variants
+                if (activeVariants.length > 0 && variantsSection && variantsContainer) {
+                    variantsSection.style.display = "block";
+                    variantsContainer.innerHTML = activeVariants.map((v: any) => {
+                        const isOos = v.stock === 0;
+                        const label = v.variante1 + (v.variante2 ? ` - ${v.variante2}` : "");
+                        return `<button class="variant-btn ${isOos ? "disabled" : ""}" data-id="${v.id}" data-name="${label}" data-stock="${v.stock}" ${isOos ? "disabled" : ""}>
+                            ${label}${isOos ? " (Agotado)" : ""}
+                        </button>`;
+                    }).join("");
+                }
 
-                variantBtns.forEach((btn) => {
+                // Product details / specs
+                if (productDetails && Object.keys(productDetails).length > 0 && productDetailsSection && detailsList) {
+                    productDetailsSection.style.display = "block";
+                    detailsList.innerHTML = Object.entries(productDetails).map(([key, value]) =>
+                        `<li><span class="detail-key">${key}:</span><span class="detail-value">${value}</span></li>`
+                    ).join("");
+                }
+
+                // Variant selection
+                let selectedVariantId: string | null = null;
+                let selectedVariantName: string | null = null;
+                const hasVariants = activeVariants.length > 0;
+
+                document.querySelectorAll(".variant-btn").forEach(btn => {
                     btn.addEventListener("click", () => {
-                        variantBtns.forEach((b) =>
-                            b.classList.remove("selected"),
-                        );
+                        document.querySelectorAll(".variant-btn").forEach(b => b.classList.remove("selected"));
                         btn.classList.add("selected");
                         selectedVariantId = btn.getAttribute("data-id");
                         selectedVariantName = btn.getAttribute("data-name");
@@ -507,498 +281,240 @@ if (Array.isArray(product.images)) {
                     });
                 });
 
-                // Add to Cart logic
-                const addToCartBtn = document.getElementById("add-to-cart-btn");
+                // Add to cart
+                const displayPrice = hasDiscount ? product.sale_price : product.price;
+                const productPayload = {
+                    id: product.id,
+                    name: product.name,
+                    brand: product.brand,
+                    price: displayPrice,
+                    image_url: product.image_url,
+                    stock: product.stock,
+                };
+
                 if (addToCartBtn) {
+                    addToCartBtn.dataset.product = JSON.stringify(productPayload);
                     addToCartBtn.addEventListener("click", () => {
                         if (hasVariants && !selectedVariantId) {
-                            if (variantError)
-                                variantError.style.display = "block";
+                            if (variantError) variantError.style.display = "block";
                             return;
                         }
 
-                        const productData = JSON.parse(
-                            addToCartBtn.dataset.product || "{}",
-                        );
-
+                        const data = JSON.parse(addToCartBtn.dataset.product || "{}");
                         if (selectedVariantId) {
-                            productData.variant_id = selectedVariantId;
-                            // Append variant name to the product name for the cart display
-                            productData.name = `${productData.name} - ${selectedVariantName}`;
-
-                            // Override the product stock with the specific variant's stock
-                            const variantBtn = document.querySelector(
-                                `.variant-btn[data-id="${selectedVariantId}"]`,
-                            );
-                            if (variantBtn) {
-                                productData.stock = parseInt(
-                                    variantBtn.getAttribute("data-stock") ||
-                                        "0",
-                                    10,
-                                );
-                            }
+                            data.variant_id = selectedVariantId;
+                            data.name = `${data.name} - ${selectedVariantName}`;
+                            const varBtn = document.querySelector(`.variant-btn[data-id="${selectedVariantId}"]`);
+                            if (varBtn) data.stock = parseInt(varBtn.getAttribute("data-stock") || "0", 10);
                         }
 
-                        if (window.addToCart) {
-                            window.addToCart(productData);
-                        }
+                        if ((window as any).addToCart) (window as any).addToCart(data);
                     });
                 }
-            });
-        </script>
 
+                // Hide skeleton, show content
+                if (skeleton) skeleton.style.display = "none";
+                if (content) content.style.display = "block";
+
+                // Animate
+                setTimeout(() => {
+                    document.querySelectorAll(".product-page .reveal-item").forEach((el, i) => {
+                        setTimeout(() => el.classList.add("is-visible"), i * 200);
+                    });
+                }, 100);
+
+                // Load related products
+                if (categoryId) {
+                    loadRelatedProducts(categoryId, productId);
+                }
+
+            } catch (e) {
+                console.error("Error loading product:", e);
+                if (skeleton) skeleton.style.display = "none";
+                if (productError) productError.style.display = "flex";
+            }
+        }
+
+        async function loadRelatedProducts(categoryId: string, currentProductId: string) {
+            try {
+                const res = await fetch(`${API_BASE_URL}/products?category_id=${categoryId}&limit=5`);
+                if (!res.ok) return;
+                const json = await res.json();
+                if (!json.success || !json.data) return;
+
+                const related = json.data
+                    .filter((p: any) => String(p.id) !== String(currentProductId))
+                    .slice(0, 4);
+
+                if (related.length === 0) return;
+
+                const relatedSection = document.getElementById("related-section");
+                const relatedGrid = document.getElementById("related-grid");
+                const relatedLink = document.getElementById("related-category-link") as HTMLAnchorElement;
+
+                if (relatedLink) relatedLink.href = `/category/${categoryId}`;
+                if (relatedGrid) {
+                    relatedGrid.innerHTML = related.map((p: any, i: number) => {
+                        const price = p.sale_price && parseFloat(p.sale_price) < parseFloat(p.price) ? p.sale_price : p.price;
+                        const hasD = p.sale_price && parseFloat(p.sale_price) < parseFloat(p.price);
+                        return `
+                        <a href="/product/${p.id}" class="product-card reveal-item" style="transition-delay:${i * 80}ms">
+                            <div class="product-image-wrapper">
+                                ${hasD ? '<span class="product-badge">Oferta</span>' : ""}
+                                <img src="${p.image_url}" alt="${p.name}" loading="lazy" />
+                            </div>
+                            <div class="product-info">
+                                <p class="product-brand">${p.brand || ""}</p>
+                                <h3 class="product-name">${p.name}</h3>
+                                <div class="product-price-row">
+                                    <span class="product-price">$${price}</span>
+                                    ${hasD ? `<span class="product-original-price">$${p.price}</span>` : ""}
+                                </div>
+                            </div>
+                        </a>`;
+                    }).join("");
+                }
+
+                if (relatedSection) relatedSection.style.display = "block";
+
+                // Observe for scroll reveal
+                const observer = new IntersectionObserver(
+                    (entries, obs) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                entry.target.classList.add("is-visible");
+                                entry.target.querySelectorAll(".reveal-item").forEach((item, i) => {
+                                    setTimeout(() => (item as HTMLElement).classList.add("is-visible"), i * 150);
+                                });
+                                obs.unobserve(entry.target);
+                            }
+                        });
+                    },
+                    { root: null, rootMargin: "0px 0px -80px 0px", threshold: 0.05 }
+                );
+                document.querySelectorAll(".reveal-on-scroll").forEach(el => observer.observe(el));
+
+            } catch (e) {
+                console.error("Error loading related products:", e);
+            }
+        }
+
+        document.addEventListener("astro:page-load", () => {
+            initProductPage();
+        });
+    </script>
 
 <style>
-    /* Back button */
-    .back-bar {
-        padding: 1.5rem 5%;
-        max-width: 1400px;
-        margin: 0 auto;
-    }
+    .back-bar { padding: 1.5rem 5%; max-width: 1400px; margin: 0 auto; }
+    .back-btn { display: inline-flex; align-items: center; gap: 0.5rem; background: transparent; border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); padding: 0.55rem 1.1rem; border-radius: 6px; font-family: "Inter", sans-serif; font-size: 0.9rem; cursor: pointer; transition: all 0.25s ease; letter-spacing: 0.3px; }
+    .back-btn:hover { border-color: rgba(255,255,255,0.5); color: #fff; background: rgba(255,255,255,0.05); transform: translateX(-2px); }
 
-    .back-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        color: rgba(255, 255, 255, 0.7);
-        padding: 0.55rem 1.1rem;
-        border-radius: 6px;
-        font-family: "Inter", sans-serif;
-        font-size: 0.9rem;
-        cursor: pointer;
-        transition: all 0.25s ease;
-        letter-spacing: 0.3px;
-    }
-
-    .back-btn:hover {
-        border-color: rgba(255, 255, 255, 0.5);
-        color: #fff;
-        background: rgba(255, 255, 255, 0.05);
-        transform: translateX(-2px);
-    }
-
-    /* Sección de productos relacionados — mismos estilos que index.astro */
-    .related-wrapper {
-        padding: 0 0 5rem 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-        margin-top: 2rem;
-    }
-
-    .container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 5%;
-    }
-
-    .store-section {
-        padding: 4rem 0 0 0;
-    }
-
-    .category-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 2.5rem;
-        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-        padding-bottom: 1rem;
-    }
-
-    .section-title {
-        font-size: 2.5rem;
-        letter-spacing: 2px;
-        font-family: "Oswald", sans-serif;
-        text-transform: uppercase;
-    }
-
-    .category-link {
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        opacity: 0.7;
-        font-weight: 400;
-        text-decoration: none;
-        color: #fff;
-        transition: opacity 0.3s;
-        margin-bottom: 0.5rem;
-    }
-
-    .category-link:hover {
-        opacity: 1;
-    }
-
-    .products-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1.5rem;
-    }
-
-    @media (min-width: 768px) {
-        .products-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
-    }
-
-    /* Scoped styles */
-    .product-page {
-        padding: 1rem 5% 4rem;
-        max-width: 1400px;
-        margin: 0 auto;
-        min-height: 60vh;
-        display: flex;
-        align-items: center;
-    }
-
-    .product-container {
-        display: flex;
-        flex-direction: column;
-        gap: 4rem;
-        width: 100%;
-    }
+    .product-page { padding: 1rem 5% 4rem; max-width: 1400px; margin: 0 auto; min-height: 60vh; display: flex; align-items: center; }
+    .product-container { display: flex; flex-direction: column; gap: 4rem; width: 100%; }
 
     @media (min-width: 900px) {
-        .product-container {
-            flex-direction: row;
-            align-items: center;
-        }
-        .product-image-col,
-        .product-info-col {
-            flex: 1;
-        }
+        .product-container { flex-direction: row; align-items: center; }
+        .product-image-col, .product-info-col { flex: 1; }
     }
 
-    .product-image-col {
-        position: relative;
-    }
+    .product-image-col { position: relative; }
+    .image-wrapper { position: relative; background: rgba(255,255,255,0.03); border-radius: 12px; overflow: hidden; aspect-ratio: 4/5; display: flex; align-items: center; justify-content: center; }
+    .image-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s ease; }
 
-    .image-wrapper {
-        position: relative;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 12px;
-        overflow: hidden;
-        aspect-ratio: 4/5;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+    .gallery-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: all 0.3s ease; backdrop-filter: blur(4px); }
+    .image-wrapper:hover .gallery-nav { opacity: 1; }
+    .gallery-nav:hover { background: rgba(255,255,255,0.2); transform: translateY(-50%) scale(1.1); }
+    .gallery-nav.prev { left: 10px; }
+    .gallery-nav.next { right: 10px; }
 
-    .image-wrapper img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: opacity 0.3s ease;
-    }
+    .sale-badge { position: absolute; top: 20px; left: 20px; background: #fff; color: #000; padding: 6px 12px; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; border-radius: 2px; z-index: 10; font-family: "Oswald", sans-serif; }
 
-    .gallery-nav {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        background: rgba(0, 0, 0, 0.5);
-        color: white;
-        border: none;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        opacity: 0;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(4px);
-    }
+    .product-gallery { display: flex; gap: 1rem; margin-top: 1rem; overflow-x: auto; padding-bottom: 0.5rem; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent; }
+    .product-gallery::-webkit-scrollbar { height: 6px; }
+    .product-gallery::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
 
-    .image-wrapper:hover .gallery-nav {
-        opacity: 1;
-    }
+    .gallery-thumbnail { flex: 0 0 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 2px solid transparent; cursor: pointer; background: rgba(255,255,255,0.03); transition: all 0.3s ease; padding: 0; }
+    .gallery-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-thumbnail:hover { border-color: rgba(255,255,255,0.5); }
+    .gallery-thumbnail.active { border-color: #fff; }
 
-    .gallery-nav:hover {
-        background: rgba(255, 255, 255, 0.2);
-        transform: translateY(-50%) scale(1.1);
-    }
+    .product-info-col { display: flex; flex-direction: column; gap: 1.5rem; }
 
-    .gallery-nav.prev {
-        left: 10px;
-    }
+    .brand { font-size: 1.2rem; letter-spacing: 3px; opacity: 0.6; margin-bottom: -1rem; font-family: "Oswald", sans-serif; text-transform: uppercase; }
+    .title { font-size: 3.5rem; line-height: 1.1; margin-bottom: 0.5rem; font-family: "Oswald", sans-serif; text-transform: uppercase; }
 
-    .gallery-nav.next {
-        right: 10px;
-    }
+    .price-container { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1rem; }
+    .current-price { font-size: 2.5rem; font-weight: 700; font-family: "Oswald", sans-serif; text-transform: uppercase; }
+    .original-price { font-size: 1.5rem; text-decoration: line-through; opacity: 0.5; }
 
-    .sale-badge {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        background: #fff;
-        color: #000;
-        padding: 6px 12px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        border-radius: 2px;
-        z-index: 10;
-        font-family: "Oswald", sans-serif;
-    }
+    .description { font-size: 1.1rem; line-height: 1.8; opacity: 0.8; margin-bottom: 1rem; }
 
-    /* Gallery Styles */
-    .product-gallery {
-        display: flex;
-        gap: 1rem;
-        margin-top: 1rem;
-        overflow-x: auto;
-        padding-bottom: 0.5rem;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
-    }
+    .product-variants { margin-bottom: 2rem; }
+    .variants-title { font-size: 1.1rem; margin-bottom: 1rem; font-weight: 600; }
+    .variants-grid { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+    .variant-btn { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 0.8rem 1.2rem; border-radius: 6px; font-family: "Inter", sans-serif; font-size: 0.95rem; cursor: pointer; transition: all 0.3s ease; }
+    .variant-btn:hover:not(.disabled) { border-color: #fff; background: rgba(255,255,255,0.1); }
+    .variant-btn.selected { border-color: #fff; background: #fff; color: #000; font-weight: 600; }
+    .variant-btn.disabled { opacity: 0.3; cursor: not-allowed; text-decoration: line-through; }
 
-    .product-gallery::-webkit-scrollbar {
-        height: 6px;
-    }
+    .add-to-cart-btn { background: #fff; color: #000; border: none; padding: 1.5rem 3rem; font-size: 1.2rem; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: transform 0.3s ease, background 0.3s ease; border-radius: 4px; width: 100%; max-width: 400px; font-family: "Oswald", sans-serif; text-transform: uppercase; }
+    .add-to-cart-btn:hover { transform: translateY(-3px); background: #f0f0f0; }
 
-    .product-gallery::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 3px;
-    }
+    .product-details { margin-bottom: 2rem; background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+    .details-title { font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 1.2rem; margin-bottom: 1rem; letter-spacing: 1px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
+    .details-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+    .details-list li { display: flex; justify-content: space-between; font-size: 0.95rem; }
+    .detail-key { opacity: 0.7; font-weight: 300; }
+    .detail-value { font-weight: 400; text-align: right; }
 
-    .gallery-thumbnail {
-        flex: 0 0 80px;
-        height: 80px;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 2px solid transparent;
-        cursor: pointer;
-        background: rgba(255, 255, 255, 0.03);
-        transition: all 0.3s ease;
-        padding: 0;
-    }
+    /* Related */
+    .related-wrapper { padding: 0 0 5rem 0; border-top: 1px solid rgba(255,255,255,0.06); margin-top: 2rem; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 0 5%; }
+    .store-section { padding: 4rem 0 0 0; }
+    .category-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 1rem; }
+    .section-title { font-size: 2.5rem; letter-spacing: 2px; font-family: "Oswald", sans-serif; text-transform: uppercase; }
+    .category-link { font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; opacity: 0.7; font-weight: 400; text-decoration: none; color: #fff; transition: opacity 0.3s; margin-bottom: 0.5rem; }
+    .category-link:hover { opacity: 1; }
+    .products-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+    @media (min-width: 768px) { .products-grid { grid-template-columns: repeat(4, 1fr); } }
 
-    .gallery-thumbnail img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
+    /* Product cards in related */
+    .product-card { display: flex; flex-direction: column; text-decoration: none; color: #fff; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden; transition: transform 0.3s ease, border-color 0.3s ease; }
+    .product-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.15); }
+    .product-image-wrapper { position: relative; aspect-ratio: 1/1; overflow: hidden; background: #111; }
+    .product-image-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+    .product-card:hover .product-image-wrapper img { transform: scale(1.05); }
+    .product-badge { position: absolute; top: 10px; left: 10px; background: #fff; color: #000; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 3px 8px; border-radius: 2px; z-index: 2; font-family: "Oswald", sans-serif; }
+    .product-info { padding: 1rem; display: flex; flex-direction: column; gap: 0.25rem; }
+    .product-brand { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; }
+    .product-name { font-size: 1rem; line-height: 1.3; font-family: "Oswald", sans-serif; text-transform: uppercase; }
+    .product-price-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; }
+    .product-price { font-family: "Oswald", sans-serif; font-size: 1.2rem; font-weight: 700; }
+    .product-original-price { font-size: 0.85rem; text-decoration: line-through; opacity: 0.4; }
 
-    .gallery-thumbnail:hover {
-        border-color: rgba(255, 255, 255, 0.5);
-    }
+    /* Skeleton */
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    .skeleton-img { flex: 1; aspect-ratio: 4/5; background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 12px; min-height: 300px; }
+    .skeleton-info { flex: 1; display: flex; flex-direction: column; gap: 1rem; }
+    .skeleton-line { background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; height: 1.5rem; }
+    .skeleton-line.short { width: 40%; }
+    .skeleton-line.medium { width: 60%; }
+    .skeleton-line.long { width: 90%; }
 
-    .gallery-thumbnail.active {
-        border-color: #fff;
-    }
+    /* Error */
+    .full-error { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 4rem; text-align: center; background: rgba(255,50,50,0.05); border: 1px solid rgba(255,50,50,0.2); border-radius: 8px; margin: 2rem 5%; }
+    .full-error button { background: #fff; color: #000; border: none; padding: 0.75rem 2rem; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; border-radius: 4px; transition: background 0.3s; }
+    .full-error button:hover { background: #e0e0e0; }
 
-    .product-info-col {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    .brand {
-        font-size: 1.2rem;
-        letter-spacing: 3px;
-        opacity: 0.6;
-        margin-bottom: -1rem;
-        font-family: "Oswald", sans-serif;
-        text-transform: uppercase;
-    }
-
-    .title {
-        font-size: 3.5rem;
-        line-height: 1.1;
-        margin-bottom: 0.5rem;
-        font-family: "Oswald", sans-serif;
-        text-transform: uppercase;
-    }
-
-    .price-container {
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .current-price {
-        font-size: 2.5rem;
-        font-weight: 700;
-        font-family: "Oswald", sans-serif;
-        text-transform: uppercase;
-    }
-
-    .original-price {
-        font-size: 1.5rem;
-        text-decoration: line-through;
-        opacity: 0.5;
-    }
-
-    .description {
-        font-size: 1.1rem;
-        line-height: 1.8;
-        opacity: 0.8;
-        margin-bottom: 1rem;
-    }
-
-    /* Variants Styles */
-    .product-variants {
-        margin-bottom: 2rem;
-    }
-
-    .variants-title {
-        font-size: 1.1rem;
-        margin-bottom: 1rem;
-        font-weight: 600;
-    }
-
-    .variants-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.8rem;
-    }
-
-    .variant-btn {
-        background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        color: #fff;
-        padding: 0.8rem 1.2rem;
-        border-radius: 6px;
-        font-family: "Inter", sans-serif;
-        font-size: 0.95rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .variant-btn:hover:not(.disabled) {
-        border-color: #fff;
-        background: rgba(255, 255, 255, 0.1);
-    }
-
-    .variant-btn.selected {
-        border-color: #fff;
-        background: #fff;
-        color: #000;
-        font-weight: 600;
-    }
-
-    .variant-btn.disabled {
-        opacity: 0.3;
-        cursor: not-allowed;
-        text-decoration: line-through;
-    }
-
-    .add-to-cart-btn {
-        background: #fff;
-        color: #000;
-        border: none;
-        padding: 1.5rem 3rem;
-        font-size: 1.2rem;
-        font-weight: 700;
-        letter-spacing: 2px;
-        cursor: pointer;
-        transition:
-            transform 0.3s ease,
-            background 0.3s ease;
-        border-radius: 4px;
-        width: 100%;
-        max-width: 400px;
-        font-family: "Oswald", sans-serif;
-        text-transform: uppercase;
-    }
-
-    .add-to-cart-btn:hover {
-        transform: translateY(-3px);
-        background: #f0f0f0;
-    }
-
-    .product-details {
-        margin-bottom: 2rem;
-        background: rgba(255, 255, 255, 0.02);
-        padding: 1.5rem;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .details-title {
-        font-family: "Oswald", sans-serif;
-        text-transform: uppercase;
-        font-size: 1.2rem;
-        margin-bottom: 1rem;
-        letter-spacing: 1px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding-bottom: 0.5rem;
-    }
-
-    .details-list {
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .details-list li {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.95rem;
-    }
-
-    .detail-key {
-        opacity: 0.7;
-        font-weight: 300;
-    }
-
-    .detail-value {
-        font-weight: 400;
-        text-align: right;
-    }
-
-    .product-meta {
-        margin-top: 3rem;
-        padding-top: 2rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        font-size: 0.9rem;
-        opacity: 0.6;
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    /* Animation */
-    .reveal-item {
-        opacity: 0;
-        transform: translateY(30px);
-        transition:
-            opacity 0.8s ease-out,
-            transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
-    .reveal-item.is-visible {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    /* Reveal */
+    .reveal-item { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .reveal-item.is-visible { opacity: 1; transform: translateY(0); }
 </style>
 
 <style is:global>
-    /* Essential globals for body/html in case they aren't loaded */
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-    body {
-        background-color: #000;
-        color: #fff;
-        font-family: "Inter", sans-serif;
-    }
-    /* Reveal animation para la sección de relacionados */
-    .reveal-item {
-        opacity: 0;
-        transform: translateY(40px);
-        transition:
-            opacity 0.8s ease-out,
-            transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-    }
-    .reveal-on-scroll.is-visible .reveal-item {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background-color: #000; color: #fff; font-family: "Inter", sans-serif; }
+    .reveal-item { opacity: 0; transform: translateY(40px); transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .reveal-on-scroll.is-visible .reveal-item { opacity: 1; transform: translateY(0); }
 </style>
 </BaseLayout>
