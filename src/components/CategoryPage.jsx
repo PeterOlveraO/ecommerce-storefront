@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-const API_BASE_URL = "https://api.vapezone.com.mx";
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getCategoryIdFromUrl() {
